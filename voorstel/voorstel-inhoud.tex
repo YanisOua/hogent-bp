@@ -1,84 +1,191 @@
-%---------- Inleiding ---------------------------------------------------------
+%==============================================================================
+% Introductie
+%==============================================================================
+\section{Introductie}
 
-% TODO: Is dit voorstel gebaseerd op een paper van Research Methods die je
-% vorig jaar hebt ingediend? Heb je daarbij eventueel samengewerkt met een
-% andere student?
-% Zo ja, haal dan de tekst hieronder uit commentaar en pas aan.
+Digital agencies streven ernaar om kwalitatieve, werkende webapplicaties en prototypes zo efficiënt mogelijk op te leveren. In presales- en projectcontext verwachten klanten niet alleen wireframes of statische ontwerpen, maar interactieve applicaties die de uiteindelijke oplossing realistisch benaderen. Tegelijkertijd worden LLM's steeds vaker gebruikt om code te genereren, al varieert de kwaliteit en onderhoudbaarheid van die code nog sterk \parencite{Zan2023NL2Code,Jiang2024CodeGenSurvey,Bistarelli2025LLMCodeReview}. De vraag is hoe we deze technieken veilig en nuttig kunnen integreren in de huidige manier van werken.
 
-%\paragraph{Opmerking}
+Ballistix Digital ontwikkelt verschillende B2B-webapplicaties die gebruikmaken van een gemeenschappelijke React-componentenbibliotheek en huisstijl. Ongeveer de helft van de projecten wordt gerealiseerd in deze huisstijl, waardoor applicaties vaak dezelfde bouwstenen delen, zoals headers, navigatie, tabellen en formuliercomponenten. Ondanks deze gedeelde basis vereist de initiële projectopstart nog aanzienlijke manuele inspanning. Voor elk nieuw project moeten ontwikkelaars onder meer pagina's aanmaken, nieuwe datatypes definiëren, tabellen en formulieren opzetten of aanpassen, navigatie-elementen configureren en toegangsrechten (\emph{allowed\_views}) bijwerken. Deze stappen worden bij elk project grotendeels herhaald, wat leidt tot een repetitief en tijdrovend design-to-codeproces.
 
-% Dit voorstel is gebaseerd op het onderzoeksvoorstel dat werd geschreven in het
-% kader van het vak Research Methods dat ik (vorig/dit) academiejaar heb
-% uitgewerkt (met medesturent VOORNAAM NAAM als mede-auteur).
-% 
+Dit repetitieve karakter heeft meerdere nadelige gevolgen. Enerzijds neemt de doorlooptijd van nieuwe projecten toe, wat de flexibiliteit van Ballistix Digital beperkt in presales- en implementatietrajecten. Anderzijds ontstaat er een risico op inconsistent gebruik van de huisstijl en componenten, zeker wanneer verschillende ontwikkelaars betrokken zijn of wanneer projecten onder tijdsdruk worden opgestart. Tegelijkertijd beschrijven model- en configuratiegedreven benaderingen hoe herhalende structuren in applicaties systematisch kunnen worden beschreven en (deels) automatisch gegenereerd \parencite{Nikiforova2025,Ourai2025}. Onderzoek naar LLM-gebaseerde UI-codegeneratie toont daarnaast dat generatieve modellen weliswaar nuttig zijn voor het produceren van boilerplatecode, maar dat extra sturing en context nodig zijn om kwalitatieve, domeinspecifieke UI-code te bekomen \parencite{Wu2024UICoder}. Voor een organisatie als Ballistix Digital, die al investeert in een herbruikbare componentenbibliotheek, is het dan ook logisch om te onderzoeken hoe deze bouwstenen sneller en, waar mogelijk, automatisch kunnen worden ingezet bij de projectopstart.
 
-\section{Inleiding}%
-\label{sec:inleiding}
+Tegen deze achtergrond staat in deze bachelorproef de volgende centrale onderzoeksvraag centraal:
+\begin{quote}
+\emph{Hoe kan de initiële opzet van frontend-applicaties die gebruikmaken van de gedeelde huisstijl en componentenbibliotheek van Ballistix Digital worden geautomatiseerd, zodat de ontwikkeltijd bij projectopstart vermindert met behoud van huisstijlconsistentie?}
+\end{quote}
 
-Waarover zal je bachelorproef gaan? Introduceer het thema en zorg dat volgende zaken zeker duidelijk aanwezig zijn:
+Om deze centrale onderzoeksvraag te beantwoorden, worden volgende deelvragen geformuleerd:
+\begin{enumerate}
+  \item Hoe verloopt de huidige projectopstart voor applicaties die de gedeelde huisstijl en componentenbibliotheek van Ballistix Digital gebruiken, en welke activiteiten zijn daarin het meest repetitief en tijdrovend?
+  \item Welke kwaliteits- en consistentie-eisen gelden er binnen Ballistix Digital voor nieuwe applicaties die in deze huisstijl worden ontwikkeld?
+  \item Welke benaderingen voor de automatisering van design-to-code en frontend-projectsetup worden in de literatuur en praktijk beschreven, en in welke mate zijn deze toepasbaar op de context van Ballistix Digital?
+  \item Welke functionele en niet-functionele requirements moet een automatiseringsoplossing voor de projectopstart bij Ballistix Digital minimaal vervullen?
+  \item In welke mate vermindert een proof-of-conceptoplossing de benodigde tijd voor projectopstart, en blijft de huisstijlconsistentie behouden, vergeleken met de huidige manuele werkwijze?
+\end{enumerate}
 
+Het doel van het onderzoek is om een oplossing te ontwerpen en te evalueren die de meest repetitieve stappen in de projectopstart automatiseert, zonder de bestaande huisstijl en componentenbibliotheek uit het oog te verliezen. Concreet heeft deze bachelorproef als doel:
 \begin{itemize}
-  \item kaderen thema
-  \item de doelgroep
-  \item de probleemstelling en (centrale) onderzoeksvraag
-  \item de onderzoeksdoelstelling
+  \item de huidige projectopstart bij Ballistix Digital te analyseren en de belangrijkste pijnpunten en repetitieve activiteiten in kaart te brengen;
+  \item op basis van vakliteratuur en praktijkcases relevante benaderingen voor automatisering van design-to-code en projectsetup te identificeren, waaronder, indien passend, AI-gebaseerde technieken;
+  \item functionele en niet-functionele requirements op te stellen voor een oplossing die de initiële opzet van pagina's, tabellen, formulieren, navigatie en toegangsrechten kan automatiseren;
+  \item een proof-of-concept te ontwikkelen die deze automatisering realiseert binnen de technologie-stack van Ballistix Digital;
+  \item en deze oplossing te evalueren door de ontwikkeltijd en kwaliteit van de gegenereerde opzet te vergelijken met de huidige manuele werkwijze.
 \end{itemize}
 
-Denk er aan: een typische bachelorproef is \textit{toegepast onderzoek}, wat betekent dat je start vanuit een concrete probleemsituatie in bedrijfscontext, een \textbf{casus}. Het is belangrijk om je onderwerp goed af te bakenen: je gaat voor die \textit{ene specifieke probleemsituatie} op zoek naar een goede oplossing, op basis van de huidige kennis in het vakgebied.
+De doelgroep van dit onderzoek bestaat in de eerste plaats uit de ontwikkelaars en technische verantwoordelijken bij Ballistix Digital, maar de resultaten zijn ook relevant voor andere digital agencies die met gelijkaardige componentenbibliotheken en design systems werken. Naast een technisch prototype levert deze bachelorproef een onderbouwde analyse en concrete aanbevelingen op voor het verder optimaliseren van de projectopstart en de bijhorende ontwikkelprocessen.
 
-De doelgroep moet ook concreet en duidelijk zijn, dus geen algemene of vaag gedefinieerde groepen zoals \emph{bedrijven}, \emph{developers}, \emph{Vlamingen}, enz. Je richt je in elk geval op it-professionals, een bachelorproef is geen populariserende tekst. Eén specifiek bedrijf (die te maken hebben met een concrete probleemsituatie) is dus beter dan \emph{bedrijven} in het algemeen.
+%==============================================================================
+% State-of-the-art
+%==============================================================================
+\section{State-of-the-art}
+Het gebruik van large language models (LLM's) en andere generatieve technieken voor codegeneratie is de laatste jaren sterk toegenomen. Meerdere studies beschrijven hoe LLM's broncode kunnen genereren op basis van natuurlijke taalprompts, van kleine codefragmenten tot volledige functies en projecten \parencite{Zan2023NL2Code,Jiang2024CodeGenSurvey}. Bistarelli et al.\ tonen in een recente literatuurstudie dat deze modellen in veel scenario's de productiviteit kunnen verhogen, maar dat de gegenereerde code vaak kwaliteitsproblemen vertoont en nog manuele review en correctie vereist \parencite{Bistarelli2025LLMCodeReview}.
 
-Formuleer duidelijk de onderzoeksvraag! De begeleiders lezen nog steeds te veel voorstellen waarin we geen onderzoeksvraag terugvinden.
+Een deel van de literatuur richt zich op model- en configuratiegedreven ontwikkeling. Nikiforova et al.\ bespreken hoe modeltransformaties in de vroege fasen van IT-projecten worden gebruikt om artefacten automatisch te genereren, zoals datamodellen en gebruikersinterfaces \parencite{Nikiforova2025}. Deze model-driven aanpakken tonen aan dat repetitieve en structureel vergelijkbare taken goed te automatiseren zijn, mits de relevante domeinconcepten (zoals entiteiten, relaties en schermtypes) expliciet worden gemodelleerd. In de praktijk bestaan daarnaast configuratiegedreven werkmodellen voor frontendontwikkeling. Ourai beschrijft hoe configuration-driven front-end development toelaat om views, formulieren en gedrag declaratief te definiëren, zodat de uiteindelijke UI grotendeels uit configuratiebestanden en templates kan worden opgebouwd in plaats van handgeschreven code \parencite{Ourai2025}. Veelvoorkomende patronen, zoals tabellen, formulieren en navigatie, worden hierbij geparametriseerd met metadata over velden, datatypes en rechten, in plaats van telkens opnieuw geprogrammeerd. Dit sluit goed aan bij situaties waarin applicaties expliciet werken met concepten zoals pagina's, datatypes en toegangsrechten (\emph{allowed\_views}), zoals bij de applicaties in de Ballistix-huisstijl.
 
-Schrijf ook iets over de doelstelling. Wat zie je als het concrete eindresultaat van je onderzoek, naast de uitgeschreven scriptie? Is het een proof-of-concept, een rapport met aanbevelingen, \ldots Met welk eindresultaat kan je je bachelorproef als een succes beschouwen?
+Specifiek voor gebruikersinterfaces is recent ook werk verschenen rond LLM-gebaseerde UI-codegeneratie. Wu et al.\ tonen met UICoder aan dat LLM's in staat zijn om UI-code te genereren, maar dat de initiële output vaak niet compileert of visueel afwijkt van het beoogde design \parencite{Wu2024UICoder}. Door de LLM te combineren met geautomatiseerde feedbackloops (zoals compileercontroles en visuele evaluatie) kan de kwaliteit van de gegenereerde UI-code echter aanzienlijk worden verbeterd. Dit bevestigt dat generatieve technieken in de praktijk niet volstaan als volledig autonome ``black box'', maar expliciet moeten worden gevoed met domeinkennis, kwaliteitscriteria en feedback over de gegenereerde output.
 
-%---------- Stand van zaken ---------------------------------------------------
+Parallel aan deze evoluties verschijnen in de praktijk verschillende AI-tools die op basis van prompts complete projecten, componenten of UI-schermen genereren. Zulke prompt-to-code- of prompt-to-app-oplossingen zijn handig om snel een eerste versie van boilerplatecode of projectstructuur op te zetten, maar sluiten vaak niet automatisch aan bij de architectuur, componentenbibliotheek en huisstijl van een specifiek bedrijf. Zonder extra instructies levert dit vaak generieke code op die onze eigen componenten negeert. Voor organisaties die al investeren in een consistente set componenten en design tokens, zoals Ballistix Digital, blijft er daardoor veel manueel werk over om de gegenereerde code in lijn te brengen met de interne standaarden.
 
-\section{Literatuurstudie}%
-\label{sec:literatuurstudie}
+Samengevat laat de literatuur drie relevante inzichten zien. Ten eerste tonen model- en configuratiegedreven benaderingen dat repetitieve en structureel vergelijkbare taken, zoals het aanmaken van standaardpagina's, tabellen en formulieren, bijzonder geschikt zijn voor automatisering \parencite{Nikiforova2025,Ourai2025}. Ten tweede blijkt uit onderzoek naar generatieve code- en UI-generatie dat LLM's weliswaar sterk zijn in het genereren van generieke code en boilerplate, maar dat zonder expliciete context en feedback de aansluiting met een concrete componentenbibliotheek en huisstijl vaak beperkt blijft \parencite{Zan2023NL2Code,Bistarelli2025LLMCodeReview,Wu2024UICoder}. Ten derde is er in de praktijk een duidelijke trend naar tools die configuratie, templates en generatieve technieken combineren. Deze bevindingen vormen het vertrekpunt voor deze bachelorproef, waarin wordt onderzocht hoe de bestaande huisstijl en componentenbibliotheek van Ballistix Digital expliciet kunnen worden ingezet om de initiële projectopstart van frontend-applicaties gedeeltelijk te automatiseren.
 
-Hier beschrijf je de \emph{state-of-the-art} rondom je gekozen onderzoeksdomein, d.w.z.\ een inleidende, doorlopende tekst over het onderzoeksdomein van je bachelorproef. Je steunt daarbij heel sterk op de professionele \emph{vakliteratuur}, en niet zozeer op populariserende teksten voor een breed publiek. Wat is de huidige stand van zaken in dit domein, en wat zijn nog eventuele open vragen (die misschien de aanleiding waren tot je onderzoeksvraag!)?
 
-Je mag de titel van deze sectie ook aanpassen (literatuurstudie, stand van zaken, enz.). Zijn er al gelijkaardige onderzoeken gevoerd? Wat concluderen ze? Wat is het verschil met jouw onderzoek?
+%==============================================================================
+% Methodologie
+%==============================================================================
+\section{Methodologie}
+Dit onderzoek is praktijkgericht en wordt uitgevoerd in de context van Ballistix Digital. We analyseren eerst de huidige werkwijze, bouwen daarna een oplossing (Proof of Concept) en testen of deze ook echt werkt. Deze aanpak zorgt voor een systematisch antwoord op de deelvragen en levert objectieve, meetbare resultaten op.
 
-Verwijs bij elke introductie van een term of bewering over het domein naar de vakliteratuur, bijvoorbeeld~\autocite{Hykes2013}! Denk zeker goed na welke werken je refereert en waarom.
+\subsection*{Fase 1: Analyse van de huidige projectopstart}
+In de eerste fase wordt de huidige projectopstart bij Ballistix Digital in kaart gebracht, met focus op de initiële opzet van frontend-applicaties die de gedeelde huisstijl en componentenbibliotheek gebruiken. Deze fase beantwoordt voornamelijk de deelvragen over de huidige situatie en de pijnpunten.
 
-Draag zorg voor correcte literatuurverwijzingen! Een bronvermelding hoort thuis \emph{binnen} de zin waar je je op die bron baseert, dus niet er buiten! Maak meteen een verwijzing als je gebruik maakt van een bron. Doe dit dus \emph{niet} aan het einde van een lange paragraaf. Baseer nooit teveel aansluitende tekst op eenzelfde bron.
+\begin{itemize}
+  \item \textbf{Onderzoeksmethoden:}
+        \begin{itemize}
+          \item \emph{Documentanalyse} van bestaande documentatie, configuratiebestanden en voorbeeldprojecten. Hierbij worden onder meer de manier waarop pagina's, datatypes, tabellen, formulieren, navigatie en \emph{allowed\_views} vandaag worden gedefinieerd en beheerd, systematisch beschreven.
+          \item \emph{Semigestructureerde interviews} met twee betrokken ontwikkelaars en/of technische verantwoordelijken om de workflow, frictiepunten en impliciete kennis rond projectopstart te verzamelen.
+        \end{itemize}
+  \item \textbf{Deliverables:}
+        \begin{itemize}
+          \item een beschrijving van de huidige projectopstart (as-is) met de opeenvolgende stappen;
+          \item een overzicht van de meest repetitieve en tijdrovende activiteiten;
+          \item een eerste inventaris van kwaliteits- en consistentie-eisen voor nieuwe projecten die de gedeelde huisstijl en componentenbibliotheek gebruiken.
+        \end{itemize}
+\end{itemize}
 
-Als je informatie over bronnen verzamelt in JabRef, zorg er dan voor dat alle nodige info aanwezig is om de bron terug te vinden (zoals uitvoerig besproken in de lessen Research Methods).
+\subsection*{Fase 2: Literatuurstudie en requirementsbepaling}
+In de tweede fase wordt de relevante literatuur verder verkend en vertaald naar concrete eisen voor een automatiseringsoplossing bij Ballistix Digital. Het doel is om inzicht te krijgen in welke technieken in aanmerking komen en welke verwachtingen realistisch zijn.
 
-% Voor literatuurverwijzingen zijn er twee belangrijke commando's:
-% \autocite{KEY} => (Auteur, jaartal) Gebruik dit als de naam van de auteur
-%   geen onderdeel is van de zin.
-% \textcite{KEY} => Auteur (jaartal)  Gebruik dit als de auteursnaam wel een
-%   functie heeft in de zin (bv. ``Uit onderzoek door Doll & Hill (1954) bleek
-%   ...'')
+\begin{itemize}
+  \item \textbf{Onderzoeksmethoden:}
+        \begin{itemize}
+          \item \emph{Gerichte literatuurstudie} op basis van wetenschappelijke publicaties en professionele vakliteratuur over design-to-code, configuratiegedreven ontwikkeling, templategeneratie en generatieve technieken voor code- en UI-generatie \parencite{Zan2023NL2Code,Nikiforova2025,Ourai2025,Bistarelli2025LLMCodeReview,Wu2024UICoder}.
+          \item \emph{Synthese} omtrend de specifieke context van Ballistix Digital, met aandacht voor herbruikbare patronen.
+        \end{itemize}
+  \item \textbf{Resultaat:}
+        \begin{itemize}
+          \item een lijst van \emph{functionele requirements}, bijvoorbeeld:
+                \begin{itemize}
+                  \item genereren van basispagina's met standaardlayout;
+                  \item genereren en configureren van tabellen en formulieren op basis van datatypes;
+                  \item opzetten van navigatiestructuren en bijhorende toegangsrechten (\emph{allowed\_views});
+                  \item opzetten en invullen van representatieve mock-data voor de belangrijkste schermen.
+                \end{itemize}
+          \item een lijst van \emph{niet-functionele requirements}, bijvoorbeeld:
+                \begin{itemize}
+                  \item behoud van huisstijlconsistentie (gebruik van componentenbibliotheek en design tokens);
+                  \item naleving van bestaande code-standaarden (bijvoorbeeld naamgeving en mappenstructuur);
+                  \item uitbreidbaarheid en onderhoudbaarheid van de oplossing;
+                  \item beperkte leercurve voor ontwikkelaars.
+                \end{itemize}
+        \end{itemize}
+\end{itemize}
 
-Je mag deze sectie nog verder onderverdelen in subsecties als dit de structuur van de tekst kan verduidelijken.
+\subsection*{Fase 3: Ontwerp en implementatie van een proof-of-concept}
+De derde fase omvat het ontwerp en de ontwikkeling van een proof-of-concept (PoC) die de meest repetitieve stappen in de projectopstart automatiseert.
 
-%---------- Methodologie ------------------------------------------------------
-\section{Methodologie}%
-\label{sec:methodologie}
+\begin{itemize}
+  \item \textbf{Onderzoeksmethoden:}
+        \begin{itemize}
+          \item \emph{Architecturaal ontwerp:} Keuze van de juiste tooling en architectuur. Indien uit fase 2 blijkt dat AI meerwaarde biedt, wordt onderzocht hoe context (zoals de componentenbibliotheek) via een protocol als MCP aan de AI kan worden gevoed.
+          \item \emph{Iteratieve ontwikkeling:} De PoC wordt gebouwd binnen de bestaande stack van Ballistix Digital (TypeScript, Next.js).
+        \end{itemize}
+  \item \textbf{Functionaliteit PoC:}
+        \begin{itemize}
+          \item genereren van een initiële set van pagina's aan de hand van een beschrijving;
+          \item genereren van tabellen en formulieren op basis van gedefinieerde datatypes;
+          \item genereren of bijwerken van navigatiestructuren en \emph{allowed\_views} voor de gegenereerde pagina's;
+          \item genereren van basis-mock-data om de schermen direct bruikbaar te maken in demo- en testscenario's.
+        \end{itemize}
+  \item \textbf{Deliverables:}
+        \begin{itemize}
+          \item de PoC-code in een Git-repository (GitHub) inclusief technische documentatie;
+          \item een architectuurschets en beschrijving van de belangrijkste ontwerpbeslissingen.
+        \end{itemize}
+\end{itemize}
 
-Hier beschrijf je hoe je van plan bent het onderzoek te voeren. Welke onderzoekstechniek ga je toepassen om elk van je onderzoeksvragen te beantwoorden? Gebruik je hiervoor literatuurstudie, interviews met belanghebbenden (bv.~voor requirements-analyse), experimenten, simulaties, vergelijkende studie, risico-analyse, PoC, \ldots?
+\subsection*{Fase 4: Validatie en evaluatie}
+In de vierde fase wordt de voorgestelde oplossing geëvalueerd door middel van een vergelijking met de huidige manuele werkwijze. Deze fase beantwoordt voornamelijk de deelvraag naar de impact op ontwikkeltijd en consistentie.
 
-Valt je onderwerp onder één van de typische soorten bachelorproeven die besproken zijn in de lessen Research Methods (bv.\ vergelijkende studie of risico-analyse)? Zorg er dan ook voor dat we duidelijk de verschillende stappen terug vinden die we verwachten in dit soort onderzoek!
+\begin{itemize}
+  \item \textbf{Onderzoeksopzet:}
+        \begin{itemize}
+          \item \emph{Quasi-experimentele vergelijking} tussen twee scenario's:
+                \begin{enumerate}
+                  \item \emph{Baseline}: projectopstart volgens de huidige, manuele werkwijze voor applicaties in de gedeelde huisstijl.
+                  \item \emph{Met PoC}: projectopstart waarbij gebruikgemaakt wordt van de ontwikkelde proof-of-concept.
+                \end{enumerate}
+          \item selectie van twee à drie representatieve casussen (bijvoorbeeld typische applicatietypes of klantscenario's) waarvoor de initiële setup wordt uitgevoerd in beide scenario's.
+        \end{itemize}
+  \item \textbf{Meetbare variabelen:}
+        \begin{itemize}
+          \item \emph{Ontwikkeltijd}: gemeten tijd (in minuten) voor de projectopstart per casus en per scenario;
+          \item \emph{Huisstijlconsistentie}: beoordeling op basis van een checklist (correct gebruik van componentenbibliotheek, design tokens en navigatiepatronen), uitgevoerd door de onderzoeker en, indien mogelijk, gevalideerd door een collega-ontwikkelaar;
+          \item \emph{Technische kwaliteit}: bijvoorbeeld aantal noodzakelijke manuele correcties aan de gegenereerde opzet om deze bruikbaar te maken in een reële projectcontext.
+        \end{itemize}
+  \item \textbf{Data-analyse:}
+        \begin{itemize}
+          \item vergelijking van de gemeten tijden en kwaliteitsindicatoren tussen de baseline en het PoC-scenario;
+          \item kwalitatieve interpretatie van de resultaten, inclusief reflectie op de oorzaken van eventuele beperkingen of afwijkingen.
+        \end{itemize}
+\end{itemize}
 
-Vermijd onderzoekstechnieken die geen objectieve, meetbare resultaten kunnen opleveren. Enquêtes, bijvoorbeeld, zijn voor een bachelorproef informatica meestal \textbf{niet geschikt}. De antwoorden zijn eerder meningen dan feiten en in de praktijk blijkt het ook bijzonder moeilijk om voldoende respondenten te vinden. Studenten die een enquête willen voeren, hebben meestal ook geen goede definitie van de populatie, waardoor ook niet kan aangetoond worden dat eventuele resultaten representatief zijn.
+\subsection*{Hulpmiddelen en globale planning}
+Voor de uitvoering van dit onderzoek worden voornamelijk softwarematige hulpmiddelen ingezet: een ontwikkelomgeving (bijvoorbeeld Cursor), versiebeheer (Git via GitHub), de bestaande codebases en configuraties van Ballistix Digital die de gedeelde huisstijl en componentenbibliotheek gebruiken, en ondersteunende tools voor build, testing en logging. Indien tijdens de literatuurstudie blijkt dat specifieke templating-, codegeneratie- of AI-tools relevant zijn, kunnen deze in de PoC worden geïntegreerd. Indien de planning dit toelaat, wordt in een bijkomend experiment onderzocht of dezelfde aanpak ook kan worden toegepast met één of meerdere alternatieve (fictieve) huisstijlen, zodat met gelijkaardige configuraties snel varianten in verschillende stijlen gegenereerd kunnen worden.
 
-Uit dit onderdeel moet duidelijk naar voor komen dat je bachelorproef ook technisch voldoen\-de diepgang zal bevatten. Het zou niet kloppen als een bachelorproef informatica ook door bv.\ een student marketing zou kunnen uitgevoerd worden.
+De globale planning voor de bachelorproef is als volgt:
+\begin{itemize}
+  \item \textbf{December}: uitwerken en finaliseren van het onderzoeksvoorstel, opstart van de literatuurstudie en uitvoering van de analysefase (documentanalyse en interviews).
+  \item \textbf{Januari}: afronden van de literatuurstudie en opstellen van de requirements, uitwerken van het architecturaal ontwerp van de oplossing.
+  \item \textbf{Februari tot Maart}: implementatie van de proof-of-concept en eerste interne testen.
+  \item \textbf{April}: uitvoeren van de validatie-experimenten (baseline versus PoC), analyseren van de resultaten en uitwerken van conclusies en aanbevelingen, samen met de uitwerking van het schriftelijke eindrapport.
+\end{itemize}
 
-Je beschrijft ook al welke tools (hardware, software, diensten, \ldots) je denkt hiervoor te gebruiken of te ontwikkelen.
+De verwachting is dat dit onderzoek aantoont dat het genereren van boilerplate-code volledig geautomatiseerd kan worden door middel van goede richtlijnen voor LLM's. Het lastigste onderdeel zal liggen bij het vinden van de juiste tools en het opstellen van deze richtlijnen.
 
-Probeer ook een tijdschatting te maken. Hoe lang zal je met elke fase van je onderzoek bezig zijn en wat zijn de concrete \emph{deliverables} in elke fase?
+%==============================================================================
+% Verwachte resultaten
+%==============================================================================
+\section{Verwacht resultaat, conclusie}
+Op basis van de geplande experimenten wordt verwacht dat de totale tijd voor de initiële projectopstart per casus aanzienlijk daalt. Tabel~\ref{tab:verwachte_tijd} geeft een mock-up van de verwachte tijdsverdeling weer.
 
-%---------- Verwachte resultaten ----------------------------------------------
-\section{Verwacht resultaat, conclusie}%
-\label{sec:verwachte_resultaten}
+\begin{table}[ht]
+  \centering
+  \caption{Verwachte tijdsverdeling voor de initiële projectopstart per casus}
+  \label{tab:verwachte_tijd}
+  \small
+  % Aangepast naar 3 kolommen (lcc) in plaats van 4
+  \begin{tabular}{lcc} 
+    \toprule
+    \textbf{Scenario} & \textbf{Ontw. (min)} & \textbf{Review (min)} \\
+    \midrule
+    Huidige werkwijze & 360 & 30 \\
+    Met PoC + AI & 60 & 30 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-Hier beschrijf je welke resultaten je verwacht. Als je metingen en simulaties uitvoert, kan je hier al mock-ups maken van de grafieken samen met de verwachte conclusies. Benoem zeker al je assen en de onderdelen van de grafiek die je gaat gebruiken. Dit zorgt ervoor dat je concreet weet welk soort data je moet verzamelen en hoe je die moet meten.
+De hypothese is dat de proof-of-concept in combinatie met AI-ondersteuning de ontwikkeltijd voor boilerplatecode sterk reduceert (van ongeveer zes uur naar één uur per casus), terwijl de reviewtijd vergelijkbaar blijft. De totale tijd per casus daalt daarmee van circa 390 naar 90 minuten. Deze tijdswinst is dus niet puur: AI-gegenereerde code wordt niet blindelings overgenomen, maar systematisch nagekeken en waar nodig gecorrigeerd. In de uiteindelijke bachelorproef wordt op basis van de gemeten tijden een staafdiagram voorzien met op de horizontale as de twee scenario's (huidige werkwijze, met PoC + AI-ondersteuning) en op de verticale as de totale tijd in minuten per casus. De balken worden opgesplitst in twee segmenten (ontwikkeltijd en reviewtijd), zodat het verschil in boilerplate-ontwikkeling duidelijk zichtbaar is, terwijl de constante reviewcomponent behouden blijft.
 
-Wat heeft de doelgroep van je onderzoek aan het resultaat? Op welke manier zorgt jouw bachelorproef voor een meerwaarde?
+De doelgroep van het onderzoek, in de eerste plaats de ontwikkelaars en technische verantwoordelijken bij Ballistix Digital, heeft baat bij een duidelijk zicht op de trade-off tussen tijdswinst en kwaliteitscontrole. Indien de hypothesen bevestigd worden, laat de voorgestelde aanpak toe om sneller een consistente basisapplicatie op te zetten, terwijl de bestaande reviewstappen behouden blijven. Dit kan de doorlooptijd van nieuwe projecten en presales-demos verkorten en tegelijk de kans op stijl- en componentafwijkingen verkleinen. Naast de technische proof-of-concept levert de bachelorproef een analyse op van de huidige projectopstart, een set van requirements voor vergelijkbare automatiseringsoplossingen en aanbevelingen voor de verdere uitbouw van de gedeelde componentenbibliotheek en interne ontwikkelprocessen. 
 
-Hier beschrijf je wat je verwacht uit je onderzoek, met de motivatie waarom. Het is \textbf{niet} erg indien uit je onderzoek andere resultaten en conclusies vloeien dan dat je hier beschrijft: het is dan juist interessant om te onderzoeken waarom jouw hypothesen niet overeenkomen met de resultaten.
-
+Indien er in de loop van het onderzoek nog tijd resteert, wordt aanvullend onderzocht in welke mate dezelfde aanpak bruikbaar is voor één of meerdere alternatieve (fictieve) huisstijlen. In dat scenario kan met gelijkaardige configuraties snel een applicatie in verschillende visuele stijlen worden gegenereerd. Dit zou de meerwaarde van de oplossing verder vergroten, bijvoorbeeld in presales-contexten waar varianten voor verschillende klanten moeten worden aangemaakt.
