@@ -3,57 +3,60 @@
 %==============================================================================
 \section{Introductie}
 
-Digital agencies streven ernaar om kwalitatieve, werkende webapplicaties en prototypes zo efficiënt mogelijk op te leveren. In presales- en projectcontext verwachten klanten niet alleen wireframes of statische ontwerpen, maar interactieve applicaties die de uiteindelijke oplossing realistisch benaderen. Tegelijkertijd worden LLM's steeds vaker gebruikt om code te genereren, al varieert de kwaliteit en onderhoudbaarheid van die code nog sterk \parencite{Zan2023NL2Code,Jiang2024CodeGenSurvey,Bistarelli2025LLMCodeReview}. De vraag is hoe we deze technieken veilig en nuttig kunnen integreren in de huidige manier van werken.
+Digital agencies streven ernaar om kwalitatieve, werkende webapplicaties en prototypes zo efficiënt mogelijk op te leveren. In presales- en projectcontext verwachten klanten niet alleen wireframes, maar interactieve applicaties die de uiteindelijke oplossing realistisch benaderen. Om dit proces te versnellen, investeren veel organisaties in design systems en componentenbibliotheken die hergebruik en visuele consistentie ondersteunen \parencite{Godbolt2016}. Binnen dergelijke omgevingen rijst de vraag hoe het design-to-codeproces, en in het bijzonder de initiële projectopstart, verder geautomatiseerd kan worden.
 
-\color{violet!60}Ballistix Digital ontwikkelt verschillende B2B-webapplicaties die gebruikmaken van een gemeenschappelijke React-componentenbibliotheek en huisstijl. Ongeveer de helft van de projecten wordt gerealiseerd in deze huisstijl, waardoor applicaties vaak dezelfde bouwstenen delen, zoals headers, navigatie, tabellen en formuliercomponenten. Ondanks deze gedeelde basis vereist de initiële projectopstart nog aanzienlijke manuele inspanning. Voor elk nieuw project moeten ontwikkelaars onder meer pagina's aanmaken, nieuwe datatypes definiëren, tabellen en formulieren opzetten of aanpassen, navigatie-elementen configureren en toegangsrechten (\emph{allowed\_views}) bijwerken. Deze stappen worden bij elk project grotendeels herhaald, wat leidt tot een repetitief en tijdrovend design-to-codeproces.
+Ballistix Digital ontwikkelt diverse B2B-web\-applicaties die gebouwd zijn op een \textbf{gestandaardiseerde basisarchitectuur}. Ongeveer de helft van de projecten maakt gebruik van deze gedeelde technische basis, inclusief een eigen React\-componentenbibliotheek en vastgelegde huisstijl. Hierdoor delen veel applicaties dezelfde bouwstenen, zoals headers, navigatie, tabellen en formuliercomponenten. Ondanks deze gedeelde basis vereist de initiële projectopstart nog aanzienlijke manuele inspanning. Voor elk nieuw project moeten ontwikkelaars opnieuw pagina's aanmaken, datatypes definiëren, tabellen en formulieren opzetten, navigatie-elementen configureren en toegangsrechten (\emph{allowed\_views}) bijwerken. Deze stappen worden bij elk project grotendeels herhaald, wat leidt tot een repetitief en tijdrovend proces.
 
-Dit repetitieve karakter heeft meerdere nadelige gevolgen. Enerzijds neemt de doorlooptijd van nieuwe projecten toe, wat de flexibiliteit van Ballistix Digital beperkt in presales- en implementatietrajecten. Anderzijds ontstaat er een risico op inconsistent gebruik van de huisstijl en componenten, zeker wanneer verschillende ontwikkelaars betrokken zijn of wanneer projecten onder tijdsdruk worden opgestart.\color{black} Tegelijkertijd beschrijven model- en configuratiegedreven benaderingen hoe herhalende structuren in applicaties systematisch kunnen worden beschreven en (deels) automatisch gegenereerd \parencite{Nikiforova2025,Ourai2025}. Onderzoek naar LLM-gebaseerde UI-codegeneratie toont daarnaast dat generatieve modellen weliswaar nuttig zijn voor het produceren van boilerplatecode, maar dat extra sturing en context nodig zijn om kwalitatieve, domeinspecifieke UI-code te bekomen \parencite{Wu2024UICoder}. Voor een organisatie als Ballistix Digital, die al investeert in een herbruikbare componentenbibliotheek, is het dan ook logisch om te onderzoeken hoe deze bouwstenen sneller en, waar mogelijk, automatisch kunnen worden ingezet bij de projectopstart.
+Dit repetitieve karakter heeft meerdere nadelige gevolgen. Enerzijds neemt de doorlooptijd van nieuwe projecten toe, wat de flexibiliteit beperkt in presales- en implementatietrajecten. Anderzijds ontstaat er een risico op inconsistent gebruik van de huisstijl en componenten, zeker wanneer verschillende ontwikkelaars betrokken zijn of wanneer projecten snel moeten worden opgestart.
+
+Tegelijkertijd toont bestaande literatuur aan dat herhalende UI-patronen en standaardstructuren in hoge mate geschikt zijn voor template-, configuratie- of modelgedreven generatie \parencite{Nikiforova2025,Nasiri2023,Ourai2025}. De logica is eenvoudig: als het manueel hergebruiken van componenten al efficiëntiewinst oplevert, zal het \emph{automatisch} genereren en configureren van deze componenten bij de opstart dit effect aanzienlijk versterken.
 
 Tegen deze achtergrond staat in deze bachelorproef de volgende centrale onderzoeksvraag centraal:
 \begin{quote}
-\textcolor{violet!60}{\emph{Hoe kan de initiële opzet van frontend-applicaties die gebruikmaken van de gedeelde huisstijl en componentenbibliotheek van Ballistix Digital worden geautomatiseerd, zodat de ontwikkeltijd bij projectopstart vermindert met behoud van huisstijlconsistentie?}}
+\emph{Hoe kan de initiële opzet van frontend-applicaties op basis van een gestandaardiseerde basisarchitectuur binnen een digital agency worden geautomatiseerd, zodat de ontwikkeltijd bij projectopstart vermindert met behoud van huisstijlconsistentie?}
 \end{quote}
 
 Om deze centrale onderzoeksvraag te beantwoorden, worden volgende deelvragen geformuleerd:
 \begin{enumerate}
-  \item \textcolor{violet!60}{Hoe verloopt de huidige projectopstart voor applicaties die de gedeelde huisstijl en componentenbibliotheek van Ballistix Digital gebruiken, en welke activiteiten zijn daarin het meest repetitief en tijdrovend?}
-  \item \textcolor{violet!60}{Welke kwaliteits- en consistentie-eisen gelden er binnen Ballistix Digital voor nieuwe applicaties die in deze huisstijl worden ontwikkeld?}
-  \item \textcolor{violet!60}{Welke benaderingen voor de automatisering van design-to-code en frontend-projectsetup worden in de literatuur en praktijk beschreven, en in welke mate zijn deze toepasbaar op de context van Ballistix Digital?}
-  \item \textcolor{violet!60}{Welke functionele en niet-functionele requirements moet een automatiseringsoplossing voor de projectopstart bij Ballistix Digital minimaal vervullen?}
-  \item \textcolor{violet!60}{In welke mate vermindert een proof-of-conceptoplossing de benodigde tijd voor projectopstart, en blijft de huisstijlconsistentie behouden, vergeleken met de huidige manuele werkwijze?}
+  \item Hoe verloopt de huidige projectopstart voor applicaties die gebruikmaken van een gedeelde architectuur binnen een digital agency, en welke activiteiten zijn daarin het meest repetitief en tijdrovend?
+  \item Welke kwaliteits- en consistentie-eisen gelden er binnen de organisatie voor nieuwe applicaties binnen deze standaard?
+  \item Welke benaderingen voor de automatisering van design-to-code en frontend-projec\-topstart worden in de literatuur en praktijk beschreven, en in welke mate zijn deze toepasbaar op de specifieke context van de casus?
+  \item Welke functionele en niet-functionele requirements moet een automatiseringsoplossing voor de projectopstart bij een digital agency minimaal vervullen?
+  \item In welke mate vermindert een proof-of-con\-cept-oplossing de benodigde tijd voor projectopstart, en blijft de huisstijlconsistentie behouden, vergeleken met de huidige manuele werkwijze?
 \end{enumerate}
 
 Het doel van het onderzoek is om een oplossing te ontwerpen en te evalueren die de meest repetitieve stappen in de projectopstart automatiseert, zonder de bestaande huisstijl en componentenbibliotheek uit het oog te verliezen. Concreet heeft deze bachelorproef als doel:
 \begin{itemize}
-  \item de huidige projectopstart bij Ballistix Digital te analyseren en de belangrijkste pijnpunten en repetitieve activiteiten in kaart te brengen;
-  \item op basis van vakliteratuur en praktijkcases relevante benaderingen voor automatisering van design-to-code en projectsetup te identificeren, waaronder, indien passend, AI-gebaseerde technieken;
+  \item de huidige projectopstart binnen de gestandaardiseerde architectuur van de digital agency te analyseren en de belangrijkste pijnpunten en repetitieve activiteiten in kaart te brengen;
+  \item op basis van vakliteratuur en praktijkcases relevante benaderingen voor automatisering van design-to-code en projectopstart te identificeren;
   \item functionele en niet-functionele requirements op te stellen voor een oplossing die de initiële opzet van pagina's, tabellen, formulieren, navigatie en toegangsrechten kan automatiseren;
-  \item een proof-of-concept te ontwikkelen die deze automatisering realiseert binnen de technologie-stack van Ballistix Digital;
+  \item een proof-of-concept te ontwikkelen dat deze automatisering realiseert binnen de technology stack van de agency, waarbij specifiek gekeken wordt naar de meerwaarde van \textbf{AI-oplossingen} (zoals LLM's of MCP) ten opzichte van klassieke templates;
   \item en deze oplossing te evalueren door de ontwikkeltijd en kwaliteit van de gegenereerde opzet te vergelijken met de huidige manuele werkwijze.
 \end{itemize}
 
-De doelgroep van dit onderzoek bestaat in de eerste plaats uit de ontwikkelaars en technische verantwoordelijken bij Ballistix Digital, maar de resultaten zijn ook relevant voor andere digital agencies die met gelijkaardige componentenbibliotheken en design systems werken. Naast een technisch prototype levert deze bachelorproef een onderbouwde analyse en concrete aanbevelingen op voor het verder optimaliseren van de projectopstart en de bijhorende ontwikkelprocessen.
+De doelgroep van dit onderzoek bestaat in de eerste plaats uit de ontwikkelaars en technische verantwoordelijken bij de casusorganisatie, maar de resultaten zijn ook relevant voor andere digital agencies die met gelijkaardige gedeelde architecturen en design systems werken. Naast een technisch prototype levert deze bachelorproef een onderbouwde analyse en concrete aanbevelingen op voor het verder optimaliseren van de projectopstart en de bijhorende ontwikkelprocessen.
 
+In de volgende sectie wordt de stand van zaken rond design-to-code, model- en configuratiegedreven ontwikkeling en automatisering van frontend-projectopstart besproken. Vervolgens wordt de gehanteerde methodologie toegelicht en worden de verwachte resultaten en de meerwaarde van het onderzoek uiteengezet.
 %==============================================================================
 % State-of-the-art
 %==============================================================================
 \section{State-of-the-art}
-Het gebruik van large language models (LLM's) en andere generatieve technieken voor codegeneratie is de laatste jaren sterk toegenomen. Meerdere studies beschrijven hoe LLM's broncode kunnen genereren op basis van natuurlijke taalprompts, van kleine codefragmenten tot volledige functies en projecten \parencite{Zan2023NL2Code,Jiang2024CodeGenSurvey}. Bistarelli et al.\ tonen in een recente literatuurstudie dat deze modellen in veel scenario's de productiviteit kunnen verhogen, maar dat de gegenereerde code vaak kwaliteitsproblemen vertoont en nog manuele review en correctie vereist \parencite{Bistarelli2025LLMCodeReview}.
+Het gebruik van large language models (LLM's) en andere generatieve technieken voor codegeneratie is de laatste jaren sterk toegenomen. Meerdere studies beschrijven hoe LLM's broncode kunnen genereren op basis van natuurlijke taalprompts, van kleine codefragmenten tot volledige functies en projecten \parencite{Zan2023NL2Code,Jiang2024CodeGenSurvey}. Bistarelli et al.\ tonen in een recente literatuurstudie dat deze modellen in veel scenario's de productiviteit kunnen verhogen, maar dat de gegenereerde code vaak kwaliteitsproblemen vertoont en nog manueel review en correctie vereist \parencite{Bistarelli2025LLMCodeReview}.
 
-Een deel van de literatuur richt zich op model- en configuratiegedreven ontwikkeling. Nikiforova et al.\ bespreken hoe modeltransformaties in de vroege fasen van IT-projecten worden gebruikt om artefacten automatisch te genereren, zoals datamodellen en gebruikersinterfaces \parencite{Nikiforova2025}. Deze model-driven aanpakken tonen aan dat repetitieve en structureel vergelijkbare taken goed te automatiseren zijn, mits de relevante domeinconcepten (zoals entiteiten, relaties en schermtypes) expliciet worden gemodelleerd. In de praktijk bestaan daarnaast configuratiegedreven werkmodellen voor frontendontwikkeling. Ourai beschrijft hoe configuration-driven front-end development toelaat om views, formulieren en gedrag declaratief te definiëren, zodat de uiteindelijke UI grotendeels uit configuratiebestanden en templates kan worden opgebouwd in plaats van handgeschreven code \parencite{Ourai2025}. Veelvoorkomende patronen, zoals tabellen, formulieren en navigatie, worden hierbij geparametriseerd met metadata over velden, datatypes en rechten, in plaats van telkens opnieuw geprogrammeerd. Dit sluit goed aan bij situaties waarin applicaties expliciet werken met concepten zoals pagina's, datatypes en toegangsrechten (\emph{allowed\_views}), zoals bij de applicaties in de Ballistix-huisstijl.
+Een deel van de literatuur richt zich op model- en configuratiegedreven ontwikkeling. Nikiforova et al.\ bespreken hoe modeltransformaties in de vroege fasen van IT-projecten worden gebruikt om artefacten automatisch te genereren, zoals datamodellen en gebruikersinterfaces \parencite{Nikiforova2025}. Deze modelgedreven aanpakken tonen aan dat repetitieve en structureel vergelijkbare taken goed te automatiseren zijn, mits de relevante domeinconcepten (zoals entiteiten, relaties en schermtypes) expliciet worden gemodelleerd. In de praktijk bestaan daarnaast configuratiegedreven werkmodellen voor frontendontwikkeling. Ourai beschrijft hoe configuratiegedreven frontendontwikkeling toelaat om views, formulieren en gedrag declaratief te definiëren, zodat de uiteindelijke gebruikersinterface grotendeels uit configuratiebestanden en sjablonen kan worden opgebouwd in plaats van handgeschreven code \parencite{Ourai2025}. Veelvoorkomende patronen, zoals tabellen, formulieren en navigatie, worden hierbij geparametriseerd met metadata over velden, datatypes en rechten, in plaats van telkens opnieuw geprogrammeerd. Dit sluit goed aan bij situaties waarin applicaties expliciet werken met concepten zoals pagina's, datatypes en toegangsrechten (\emph{allowed\_views}), zoals bij de applicaties in de Ballistix-huisstijl.
 
-Specifiek voor gebruikersinterfaces is recent ook werk verschenen rond LLM-gebaseerde UI-codegeneratie. Wu et al.\ tonen met UICoder aan dat LLM's in staat zijn om UI-code te genereren, maar dat de initiële output vaak niet compileert of visueel afwijkt van het beoogde design \parencite{Wu2024UICoder}. Door de LLM te combineren met geautomatiseerde feedbackloops (zoals compileercontroles en visuele evaluatie) kan de kwaliteit van de gegenereerde UI-code echter aanzienlijk worden verbeterd. Dit bevestigt dat generatieve technieken in de praktijk niet volstaan als volledig autonome ``black box'', maar expliciet moeten worden gevoed met domeinkennis, kwaliteitscriteria en feedback over de gegenereerde output.
+Specifiek voor gebruikersinterfaces is recent ook werk verschenen rond LLM-gebaseerde codegeneratie voor gebruikersinterfaces. Wu et al.\ tonen met UICoder aan dat LLM's in staat zijn om code voor gebruikersinterfaces te genereren, maar dat de initiële uitvoer vaak niet compileert of visueel afwijkt van het beoogde ontwerp \parencite{Wu2024UICoder}. Door de LLM te combineren met geautomatiseerde feedbacklussen (zoals compileercontroles en visuele evaluatie) kan de kwaliteit van de gegenereerde code echter aanzienlijk worden verbeterd. Dit bevestigt dat generatieve technieken in de praktijk niet volstaan als volledig autonome ``zwarte doos'', maar expliciet moeten worden gevoed met domeinkennis, kwaliteitscriteria en feedback over de gegenereerde uitvoer.
 
-Parallel aan deze evoluties verschijnen in de praktijk verschillende AI-tools die op basis van prompts complete projecten, componenten of UI-schermen genereren. Zulke prompt-to-code- of prompt-to-app-oplossingen zijn handig om snel een eerste versie van boilerplatecode of projectstructuur op te zetten, maar sluiten vaak niet automatisch aan bij de architectuur, componentenbibliotheek en huisstijl van een specifiek bedrijf. Zonder extra instructies levert dit vaak generieke code op die onze eigen componenten negeert. Voor organisaties die al investeren in een consistente set componenten en design tokens, zoals Ballistix Digital, blijft er daardoor veel manueel werk over om de gegenereerde code in lijn te brengen met de interne standaarden.
+Parallel aan deze evoluties verschijnen in de praktijk verschillende AI-tools die op basis van prompts complete projecten, componenten of gebruikersinterfaces genereren. Zulke prompt-to-code- of prompt-to-app-oplossingen zijn handig om snel een eerste versie van boilerplate-code of projectstructuur op te zetten, maar sluiten vaak niet automatisch aan bij de architectuur, componentenbibliotheek en huisstijl van een specifiek bedrijf. Zonder extra instructies levert dit vaak generieke code op die onze eigen componenten negeert. Voor organisaties die al investeren in een consistente set componenten en design tokens, zoals Ballistix Digital, blijft er daardoor veel manueel werk over om de gegenereerde code in lijn te brengen met de interne standaarden.
 
-Samengevat laat de literatuur drie relevante inzichten zien. Ten eerste tonen model- en configuratiegedreven benaderingen dat repetitieve en structureel vergelijkbare taken, zoals het aanmaken van standaardpagina's, tabellen en formulieren, bijzonder geschikt zijn voor automatisering \parencite{Nikiforova2025,Ourai2025}. Ten tweede blijkt uit onderzoek naar generatieve code- en UI-generatie dat LLM's weliswaar sterk zijn in het genereren van generieke code en boilerplate, maar dat zonder expliciete context en feedback de aansluiting met een concrete componentenbibliotheek en huisstijl vaak beperkt blijft \parencite{Zan2023NL2Code,Bistarelli2025LLMCodeReview,Wu2024UICoder}. Ten derde is er in de praktijk een duidelijke trend naar tools die configuratie, templates en generatieve technieken combineren. Deze bevindingen vormen het vertrekpunt voor deze bachelorproef, waarin wordt onderzocht hoe de bestaande huisstijl en componentenbibliotheek van Ballistix Digital expliciet kunnen worden ingezet om de initiële projectopstart van frontend-applicaties gedeeltelijk te automatiseren.
+Samengevat laat de literatuur drie relevante inzichten zien. Ten eerste tonen model- en configuratiegedreven benaderingen dat repetitieve en structureel vergelijkbare taken, zoals het aanmaken van standaardpagina's, tabellen en formulieren, bijzonder geschikt zijn voor automatisering \parencite{Nikiforova2025,Ourai2025}. Ten tweede blijkt uit onderzoek naar generatieve code- en gebruikersinterfacegeneratie dat LLM's weliswaar sterk zijn in het genereren van generieke code en boilerplate-code, maar dat zonder expliciete context en feedback de aansluiting met een concrete componentenbibliotheek en huisstijl vaak beperkt blijft \parencite{Zan2023NL2Code,Bistarelli2025LLMCodeReview,Wu2024UICoder}. Ten derde is er in de praktijk een duidelijke trend naar tools die configuratie, templates en generatieve technieken combineren. Deze bevindingen vormen het vertrekpunt voor deze bachelorproef, waarin wordt onderzocht hoe de bestaande huisstijl en componentenbibliotheek van Ballistix Digital expliciet kunnen worden ingezet om de initiële projectopstart van frontend-applicaties gedeeltelijk te automatiseren.
 
 
 %==============================================================================
 % Methodologie
 %==============================================================================
 \section{Methodologie}
-Dit onderzoek is praktijkgericht en wordt uitgevoerd in de context van Ballistix Digital. We analyseren eerst de huidige werkwijze, bouwen daarna een oplossing (Proof of Concept) en testen of deze ook echt werkt. Deze aanpak zorgt voor een systematisch antwoord op de deelvragen en levert objectieve, meetbare resultaten op.
+Dit onderzoek is praktijkgericht en wordt uitgevoerd in de context van Ballistix Digital. We analyseren eerst de huidige werkwijze, bouwen daarna een oplossing (proof-of-concept) en testen of deze ook echt werkt. Deze aanpak zorgt voor een systematisch antwoord op de deelvragen en levert objectieve, meetbare resultaten op.
 
 \subsection*{Fase 1: Analyse van de huidige projectopstart}
 In de eerste fase wordt de huidige projectopstart bij Ballistix Digital in kaart gebracht, met focus op de initiële opzet van frontend-applicaties die de gedeelde huisstijl en componentenbibliotheek gebruiken. Deze fase beantwoordt voornamelijk de deelvragen over de huidige situatie en de pijnpunten.
@@ -62,7 +65,7 @@ In de eerste fase wordt de huidige projectopstart bij Ballistix Digital in kaart
   \item \textbf{Onderzoeksmethoden:}
         \begin{itemize}
           \item \emph{Documentanalyse} van bestaande documentatie, configuratiebestanden en voorbeeldprojecten. Hierbij worden onder meer de manier waarop pagina's, datatypes, tabellen, formulieren, navigatie en \emph{allowed\_views} vandaag worden gedefinieerd en beheerd, systematisch beschreven.
-          \item \emph{Semigestructureerde interviews} met twee betrokken ontwikkelaars en/of technische verantwoordelijken om de workflow, frictiepunten en impliciete kennis rond projectopstart te verzamelen.
+          \item \emph{Semigestructureerde interviews} met twee betrokken ontwikkelaars en/of technische verantwoordelijken om de werkwijze, frictiepunten en impliciete kennis rond projectopstart te verzamelen.
         \end{itemize}
   \item \textbf{Deliverables:}
         \begin{itemize}
@@ -78,8 +81,8 @@ In de tweede fase wordt de relevante literatuur verder verkend en vertaald naar 
 \begin{itemize}
   \item \textbf{Onderzoeksmethoden:}
         \begin{itemize}
-          \item \emph{Gerichte literatuurstudie} op basis van wetenschappelijke publicaties en professionele vakliteratuur over design-to-code, configuratiegedreven ontwikkeling, templategeneratie en generatieve technieken voor code- en UI-generatie \parencite{Zan2023NL2Code,Nikiforova2025,Ourai2025,Bistarelli2025LLMCodeReview,Wu2024UICoder}.
-          \item \emph{Synthese} omtrend de specifieke context van Ballistix Digital, met aandacht voor herbruikbare patronen.
+          \item \emph{Gerichte literatuurstudie} op basis van wetenschappelijke publicaties en professionele vakliteratuur over design-to-code, configuratiegedreven ontwikkeling, templategeneratie en generatieve technieken voor code- en gebruikersinterfacegeneratie \parencite{Zan2023NL2Code,Nikiforova2025,Ourai2025,Bistarelli2025LLMCodeReview,Wu2024UICoder}.
+          \item \emph{Synthese} omtrent de specifieke context van Ballistix Digital, met aandacht voor herbruikbare patronen.
         \end{itemize}
   \item \textbf{Resultaat:}
         \begin{itemize}
@@ -87,13 +90,13 @@ In de tweede fase wordt de relevante literatuur verder verkend en vertaald naar 
                 \begin{itemize}
                   \item genereren van basispagina's met standaardlayout;
                   \item genereren en configureren van tabellen en formulieren op basis van datatypes;
-                  \item opzetten van navigatiestructuren en bijhorende toegangsrechten (\emph{allowed\_views});
-                  \item opzetten en invullen van representatieve mock-data voor de belangrijkste schermen.
+                  \item opzetten van navigatiestructuren en bijhorende toegangsrechten \\(\emph{allowed\_views});
+          \item opzetten en invullen van representatieve mock-data voor de belangrijkste schermen.
                 \end{itemize}
-          \item een lijst van \emph{niet-functionele requirements}, bijvoorbeeld:
+          \item een lijst van \emph{niet-functionele \\ requirements}, bijvoorbeeld:
                 \begin{itemize}
                   \item behoud van huisstijlconsistentie (gebruik van componentenbibliotheek en design tokens);
-                  \item naleving van bestaande code-standaarden (bijvoorbeeld naamgeving en mappenstructuur);
+                  \item naleving van bestaande \\code-standaarden (bijvoorbeeld naamgeving en mappenstructuur);
                   \item uitbreidbaarheid en onderhoudbaarheid van de oplossing;
                   \item beperkte leercurve voor ontwikkelaars.
                 \end{itemize}
@@ -101,13 +104,13 @@ In de tweede fase wordt de relevante literatuur verder verkend en vertaald naar 
 \end{itemize}
 
 \subsection*{Fase 3: Ontwerp en implementatie van een proof-of-concept}
-De derde fase omvat het ontwerp en de ontwikkeling van een proof-of-concept (PoC) die de meest repetitieve stappen in de projectopstart automatiseert.
+De derde fase omvat het ontwerp en de ontwikkeling van een proof-of-concept (PoC) dat de meest repetitieve stappen in de projectopstart automatiseert.
 
 \begin{itemize}
   \item \textbf{Onderzoeksmethoden:}
         \begin{itemize}
           \item \emph{Architecturaal ontwerp:} Keuze van de juiste tooling en architectuur. Indien uit fase 2 blijkt dat AI meerwaarde biedt, wordt onderzocht hoe context (zoals de componentenbibliotheek) via een protocol als MCP aan de AI kan worden gevoed.
-          \item \emph{Iteratieve ontwikkeling:} De PoC wordt gebouwd binnen de bestaande stack van Ballistix Digital (TypeScript, Next.js).
+          \item \emph{Iteratieve ontwikkeling:} De PoC wordt gebouwd binnen de bestaande tech stack van Ballistix Digital (TypeScript, Next.js).
         \end{itemize}
   \item \textbf{Functionaliteit PoC:}
         \begin{itemize}
@@ -118,7 +121,7 @@ De derde fase omvat het ontwerp en de ontwikkeling van een proof-of-concept (PoC
         \end{itemize}
   \item \textbf{Deliverables:}
         \begin{itemize}
-          \item de PoC-code in een Git-repository (GitHub) inclusief technische documentatie;
+          \item de PoC-code in een git-repository (GitHub) inclusief technische documentatie;
           \item een architectuurschets en beschrijving van de belangrijkste ontwerpbeslissingen.
         \end{itemize}
 \end{itemize}
@@ -132,9 +135,9 @@ In de vierde fase wordt de voorgestelde oplossing geëvalueerd door middel van e
           \item \emph{Quasi-experimentele vergelijking} tussen twee scenario's:
                 \begin{enumerate}
                   \item \emph{Baseline}: projectopstart volgens de huidige, manuele werkwijze voor applicaties in de gedeelde huisstijl.
-                  \item \emph{Met PoC}: projectopstart waarbij gebruikgemaakt wordt van de ontwikkelde proof-of-concept.
+                  \item \emph{Met PoC}: projectopstart waarbij gebruikgemaakt wordt van het ontwikkelde proof-of-concept.
                 \end{enumerate}
-          \item selectie van twee à drie representatieve casussen (bijvoorbeeld typische applicatietypes of klantscenario's) waarvoor de initiële setup wordt uitgevoerd in beide scenario's.
+          \item selectie van twee à drie representatieve casussen (bijvoorbeeld typische applicatietypes of klantscenario's) waarvoor de initiële opzet wordt uitgevoerd in beide scenario's.
         \end{itemize}
   \item \textbf{Meetbare variabelen:}
         \begin{itemize}
@@ -156,7 +159,7 @@ De globale planning voor de bachelorproef is als volgt:
 \begin{itemize}
   \item \textbf{December}: uitwerken en finaliseren van het onderzoeksvoorstel, opstart van de literatuurstudie en uitvoering van de analysefase (documentanalyse en interviews).
   \item \textbf{Januari}: afronden van de literatuurstudie en opstellen van de requirements, uitwerken van het architecturaal ontwerp van de oplossing.
-  \item \textbf{Februari tot Maart}: implementatie van de proof-of-concept en eerste interne testen.
+  \item \textbf{Februari tot Maart}: implementatie van het proof-of-concept en eerste interne testen.
   \item \textbf{April}: uitvoeren van de validatie-experimenten (baseline versus PoC), analyseren van de resultaten en uitwerken van conclusies en aanbevelingen, samen met de uitwerking van het schriftelijke eindrapport.
 \end{itemize}
 
@@ -184,8 +187,8 @@ Op basis van de geplande experimenten wordt verwacht dat de totale tijd voor de 
   \end{tabular}
 \end{table}
 
-De hypothese is dat de proof-of-concept in combinatie met AI-ondersteuning de ontwikkeltijd voor boilerplatecode sterk reduceert (van ongeveer zes uur naar één uur per casus), terwijl de reviewtijd vergelijkbaar blijft. De totale tijd per casus daalt daarmee van circa 390 naar 90 minuten. Deze tijdswinst is dus niet puur: AI-gegenereerde code wordt niet blindelings overgenomen, maar systematisch nagekeken en waar nodig gecorrigeerd. In de uiteindelijke bachelorproef wordt op basis van de gemeten tijden een staafdiagram voorzien met op de horizontale as de twee scenario's (huidige werkwijze, met PoC + AI-ondersteuning) en op de verticale as de totale tijd in minuten per casus. De balken worden opgesplitst in twee segmenten (ontwikkeltijd en reviewtijd), zodat het verschil in boilerplate-ontwikkeling duidelijk zichtbaar is, terwijl de constante reviewcomponent behouden blijft.
+De hypothese is dat het proof-of-concept in combinatie met AI-ondersteuning de ontwikkeltijd voor boilerplate-code sterk reduceert (van ongeveer zes uur naar één uur per casus), terwijl de reviewtijd vergelijkbaar blijft. De totale tijd per casus daalt daarmee van circa 390 naar 90 minuten. Deze tijdswinst is dus niet puur: AI-gegenereerde code wordt niet blindelings overgenomen, maar systematisch nagekeken en waar nodig gecorrigeerd. In de uiteindelijke bachelorproef wordt op basis van de gemeten tijden een staafdiagram voorzien met op de horizontale as de twee scenario's (huidige werkwijze, met PoC + AI-ondersteuning) en op de verticale as de totale tijd in minuten per casus. De balken worden opgesplitst in twee segmenten (ontwikkeltijd en reviewtijd), zodat het verschil in boilerplate-ontwikkeling duidelijk zichtbaar is, terwijl de constante reviewcomponent behouden blijft.
 
-De doelgroep van het onderzoek, in de eerste plaats de ontwikkelaars en technische verantwoordelijken bij Ballistix Digital, heeft baat bij een duidelijk zicht op de trade-off tussen tijdswinst en kwaliteitscontrole. Indien de hypothesen bevestigd worden, laat de voorgestelde aanpak toe om sneller een consistente basisapplicatie op te zetten, terwijl de bestaande reviewstappen behouden blijven. Dit kan de doorlooptijd van nieuwe projecten en presales-demos verkorten en tegelijk de kans op stijl- en componentafwijkingen verkleinen. Naast de technische proof-of-concept levert de bachelorproef een analyse op van de huidige projectopstart, een set van requirements voor vergelijkbare automatiseringsoplossingen en aanbevelingen voor de verdere uitbouw van de gedeelde componentenbibliotheek en interne ontwikkelprocessen. 
+De doelgroep van het onderzoek, in de eerste plaats de ontwikkelaars en technische verantwoordelijken bij Ballistix Digital, heeft baat bij een duidelijk zicht op de afruil tussen tijdswinst en kwaliteitscontrole. Indien de hypothesen bevestigd worden, laat de voorgestelde aanpak toe om sneller een consistente basisapplicatie op te zetten, terwijl de bestaande reviewstappen behouden blijven. Dit kan de doorlooptijd van nieuwe projecten en presales-demos verkorten en tegelijk de kans op stijl- en componentafwijkingen verkleinen. Naast het technische proof-of-concept levert de bachelorproef een analyse op van de huidige projectopstart, een set van requirements voor vergelijkbare automatiseringsoplossingen en aanbevelingen voor de verdere uitbouw van de gedeelde componentenbibliotheek en interne ontwikkelprocessen. 
 
 Indien er in de loop van het onderzoek nog tijd resteert, wordt aanvullend onderzocht in welke mate dezelfde aanpak bruikbaar is voor één of meerdere alternatieve (fictieve) huisstijlen. In dat scenario kan met gelijkaardige configuraties snel een applicatie in verschillende visuele stijlen worden gegenereerd. Dit zou de meerwaarde van de oplossing verder vergroten, bijvoorbeeld in presales-contexten waar varianten voor verschillende klanten moeten worden aangemaakt.
