@@ -1,51 +1,39 @@
 \chapter{\IfLanguageName{dutch}{Stand van zaken}{State of the art}}%
 \label{ch:stand-van-zaken}
 
-% Tip: Begin elk hoofdstuk met een paragraaf inleiding die beschrijft hoe
-% dit hoofdstuk past binnen het geheel van de bachelorproef. Geef in het
-% bijzonder aan wat de link is met het vorige en volgende hoofdstuk.
+Dit hoofdstuk biedt een diepgaande analyse van de huidige wetenschappelijke en industriële context met betrekking tot de automatisering van de projectopstart. We verkennen de spanning tussen ontwikkelsnelheid en codekwaliteit, de evolutie van technische schuld in het tijdperk van generatieve AI, en de rol van gestructureerde design-systemen als fundament voor betrouwbare automatisering.
 
-% Pas na deze inleidende paragraaf komt de eerste sectiehoofding.
+\section{De Metafoor van Technical Debt}
+\label{sec:td-fundament}
 
-Dit hoofdstuk bevat je literatuurstudie. De inhoud gaat verder op de inleiding, maar zal het onderwerp van de bachelorproef *diepgaand* uitspitten. De bedoeling is dat de lezer na lezing van dit hoofdstuk helemaal op de hoogte is van de huidige stand van zaken (state-of-the-art) in het onderzoeksdomein. Iemand die niet vertrouwd is met het onderwerp, weet nu voldoende om de rest van het verhaal te kunnen volgen, zonder dat die er nog andere informatie moet over opzoeken \autocite{Pollefliet2011}.
+Het concept \textit{Technical Debt} (TD), voor het eerst geïntroduceerd door Ward Cunningham, beschrijft de extra kosten die ontstaan wanneer tijdens de ontwikkeling wordt gekozen voor een snelle, suboptimale oplossing in plaats van een kwalitatieve, toekomstbestendige benadering. Volgens een grootschalige mapping-studie door \textcite{Li2014} is TD geen monolithisch blok, maar kan het worden onderverdeeld in tien categorieën, waaronder code-, design- en architectuurschuld.
 
-Je verwijst bij elke bewering die je doet, vakterm die je introduceert, enz.\ naar je bronnen. In \LaTeX{} kan dat met het commando \texttt{$\backslash${textcite\{\}}} of \texttt{$\backslash${autocite\{\}}}. Als argument van het commando geef je de ``sleutel'' van een ``record'' in een bibliografische databank in het Bib\LaTeX{}-formaat (een tekstbestand). Als je expliciet naar de auteur verwijst in de zin (narratieve referentie), gebruik je \texttt{$\backslash${}textcite\{\}}. Soms is de auteursnaam niet expliciet een onderdeel van de zin, dan gebruik je \texttt{$\backslash${}autocite\{\}} (referentie tussen haakjes). Dit gebruik je bv.~bij een citaat, of om in het bijschrift van een overgenomen afbeelding, broncode, tabel, enz. te verwijzen naar de bron. In de volgende paragraaf een voorbeeld van elk.
+Het onderzoek benadrukt dat vooral de \textbf{onderhoudbaarheid (maintainability)} het grootste slachtoffer is van onbeheerde schuld \autocite{Li2014}. In een agency-context betekent dit dat een snelle projectopstart zonder strikte standaarden direct leidt tot hogere kosten in de latere fasen van de levenscyclus van de applicatie.
 
-\textcite{Knuth1998} schreef een van de standaardwerken over sorteer- en zoekalgoritmen. Experten zijn het erover eens dat cloud computing een interessante opportuniteit vormen, zowel voor gebruikers als voor dienstverleners op vlak van informatietechnologie~\autocite{Creeger2009}.
+\section{AI-Induced Technical Debt: Een Nieuw Paradigma}
+\label{sec:ai-td-paradox}
 
-Let er ook op: het \texttt{cite}-commando voor de punt, dus binnen de zin. Je verwijst meteen naar een bron in de eerste zin die erop gebaseerd is, dus niet pas op het einde van een paragraaf.
+Met de integratie van Large Language Models (LLMs) in de ontwikkelworkflow is de aard van technische schuld veranderd. \textcite{Moreschini2026} introduceert de term \textit{AI-induced Technical Debt}. In tegenstelling tot traditionele schuld, die vaak een bewuste keuze is van een ontwikkelaar, is AI-schuld vaak onbedoeld en moeilijker te detecteren.
 
-\begin{figure}
-  \centering
-  \includegraphics[width=0.8\textwidth]{grail.jpg}
-  \caption[Voorbeeld figuur.]{\label{fig:grail}Voorbeeld van invoegen van een figuur. Zorg altijd voor een uitgebreid bijschrift dat de figuur volledig beschrijft zonder in de tekst te moeten gaan zoeken. Vergeet ook je bronvermelding niet!}
-\end{figure}
+Hoewel experimenteel onderzoek bij Google aantoont dat AI de snelheid op complexe taken met gemiddeld 21\% verhoogt \autocite{Paradis2025}, waarschuwt de industrie voor de kwalitatieve keerzijde. Uit een longitudinale analyse van 153 miljoen regels code door \textcite{Harding2024} blijkt dat AI-geassisteerde ontwikkeling leidt tot een explosie in \textbf{code churn} en gedupliceerde code. AI-modellen neigen naar het genereren van "nieuwe" codeblokken in plaats van het aanroepen van bestaande abstracties of bibliotheken, wat de technische schuld met factor acht kan doen toenemen \autocite{Harding2024}.
 
-\begin{listing}
-  \begin{minted}{python}
-    import pandas as pd
-    import seaborn as sns
 
-    penguins = sns.load_dataset('penguins')
-    sns.relplot(data=penguins, x="flipper_length_mm", y="bill_length_mm", hue="species")
-  \end{minted}
-  \caption[Voorbeeld codefragment]{Voorbeeld van het invoegen van een codefragment.}
-\end{listing}
 
-\lipsum[7-20]
+\section{Design Systemen als Single Source of Truth}
+\label{sec:design-systems-research}
 
-\begin{table}
-  \centering
-  \begin{tabular}{lcr}
-    \toprule
-    \textbf{Kolom 1} & \textbf{Kolom 2} & \textbf{Kolom 3} \\
-    $\alpha$         & $\beta$          & $\gamma$         \\
-    \midrule
-    A                & 10.230           & a                \\
-    B                & 45.678           & b                \\
-    C                & 99.987           & c                \\
-    \bottomrule
-  \end{tabular}
-  \caption[Voorbeeld tabel]{\label{tab:example}Voorbeeld van een tabel.}
-\end{table}
+De literatuur wijst uit dat een volwassen \textit{Design System} de meest effectieve remedie is tegen inconsistentie. Een design system fungeert niet enkel als een stijlgids, maar als een gecentraliseerde bibliotheek van herbruikbare code-artefacten. Volgens onderzoek van Forrester in opdracht van Figma levert het gebruik van een dergelijk systeem een efficiëntiewinst op van 34\% tot 42\% \autocite{Forrester2024}.
 
+Een cruciaal element in de automatisering hiervan zijn \textbf{Design Tokens}. Dit zijn machine-leesbare variabelen (zoals JSON-bestanden) die visuele beslissingen vastleggen. \textcite{SaltNLP2025} stelt dat het automatiseren van de "Design-to-Code" hand-off enkel succesvol kan zijn als de AI de visuele intentie kan mappen op gestructureerde data. Zonder deze tokens vervalt AI in "visual cloning", waarbij de code er visueel correct uitziet maar technisch onhoudbaar is.
+
+\section{Methoden voor Context-Bewuste Generatie}
+\label{sec:context-methods}
+
+De huidige "state-of-the-art" in AI-ondersteuning verschuift van algemene assistentie naar contextuele integratie. Hierbij worden twee hoofdpaden onderscheiden:
+
+\begin{enumerate}
+    \item \textbf{Retrieval-Augmented Generation (RAG):} Hierbij krijgt de AI toegang tot documentatie net voor het genereren van de code. Dit verhoogt de accuraatheid van library-aanroepen aanzienlijk.
+    \item \textbf{Model Context Protocol (MCP):} Een recenter protocol dat een directe link legt tussen een lokale server (bijv. met de Ballistix-componenten) en het AI-model. Dit elimineert de noodzaak om handmatig documentatie in een prompt te plakken.
+\end{enumerate}
+
+De literatuur suggereert dat de "correction overhead" --- de tijd die nodig is om AI-fouten te herstellen --- drastisch afneemt wanneer de AI opereert binnen de grenzen van een specifieke architecturale context \autocite{Moreschini2026}. Dit vormt de directe aanleiding voor de vergelijkende studie in deze bachelorproef.

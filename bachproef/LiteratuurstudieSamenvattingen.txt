@@ -1,0 +1,15 @@
+A Systematic Mapping Study on Technical Debt and Its Management (2014)
+    Waarom: Het wegnemen van de ambiguïteit rondom de term 'Technical Debt'. Er was nood aan een duidelijke classificatie om te begrijpen hoe technische compromissen de gezondheid van software op lange termijn schaden.
+    Hoe: Een systematische mapping van 94 studies (gepubliceerd tussen 1992 en 2013) om definities, typen schuld en managementstrategieën te categoriseren.
+    Wat: Een overzicht van 10 typen TD (zoals code, design en architectuur) en de tools die destijds beschikbaar waren om dit te meten.
+    Resultaat: De studie bevestigt dat TD de onderhoudbaarheid (maintainability) en aanpasbaarheid (modifiability) het hardst raakt. "Architectural debt" wordt geïdentificeerd als de meest schadelijke vorm omdat het de kern van het systeem aantast.
+    Relevante Takeaways: * Manuele, haastige keuzes bij een projectopstart creëren 'schuld' die later met rente (extra werktijd) moet worden terugbetaald.
+
+The Evolution of Technical Debt from DevOps to Generative AI (2026)
+    Waarom: Onderzoeken hoe de integratie van AI en Generatieve AI de softwareontwikkeling verandert en welke nieuwe vormen van TD hierdoor ontstaan.
+    Hoe: Een multivocal literature review die zowel academische bronnen als praktijkervaringen (blogs, rapporten) uit de industrie analyseert.
+    Wat: Een analyse van de verschuiving van traditionele DevOps naar AI-geassisteerde workflows en de impact op Technical Debt Management (TDM).
+    Resultaat: De introductie van "AI-induced Technical Debt". Hoewel AI de snelheid (velocity) verhoogt, genereert het vaak code die architecturaal inconsistent is of de grotere context mist. Belangrijke nieuwe pijnpunten zijn explainability (waarom werkt dit?) en data governance.
+    Relevante Takeaways: * AI is niet de 'gratis' oplossing: Zonder specifieke context (zoals jouw agency-huisstijl) creëert AI inconsistente code die de "consistentiekloof" vergroot.
+        Context is koning: De paper suggereert dat TDM moet evolueren naar systemen die AI-output controleren op kwaliteit en architecturale fit. Dit legitimeert direct jouw PoC met het Model Context Protocol (MCP) als noodzakelijke 'guardrail'.
+
