@@ -1,78 +1,65 @@
-\chapter{\IfLanguageName{dutch}{Methodologie}{Methodology}}%
+%%=============================================================================
+%% Methodologie
+%%=============================================================================
+
+\chapter{\IfLanguageName{dutch}{Methodologie}{Methodology}}
 \label{ch:methodologie}
 
-In dit hoofdstuk wordt de onderzoeksopzet gedetailleerd toegelicht. Om te bepalen welke AI-geassisteerde workflow de meest kwalitatieve projectopstart oplevert, wordt een vergelijkend experiment uitgevoerd. Dit experiment toetst drie verschillende technologische benaderingen tegenover diverse inputbronnen en startcondities.
+In dit hoofdstuk wordt de onderzoeksopzet en de gevolgde procedure toegelicht. Om te bepalen welke agentic workflow de meest kwalitatieve projectopstart oplevert binnen de context van Ballistix Digital, wordt gebruikgemaakt van een \textit{ontwerponderzoek} gekoppeld aan een \textit{vergelijkend experiment}. Deze aanpak is gekozen omdat het toelaat om een technologische oplossing (MCP-server) niet alleen te ontwikkelen, maar ook objectief te toetsen aan de hand van kwantitatieve kwaliteitsmetrieken en de reductie van \textit{correction overhead}.
 
-\section{Instrumentatie: Beschrijving van de Tools}
-\label{sec:tools-beschrijving}
+\section{Onderzoeksfasen}
+\label{sec:onderzoeksfasen}
 
-Voor dit onderzoek zijn drie categorieën van tools geselecteerd, elk met een verschillende graad van specialisatie en context-bewustzijn.
-
-\begin{description}
-    \item[Generieke LLM (ChatGPT/Claude):] Deze tools vertegenwoordigen de 'baseline'. Ze beschikken over een enorme hoeveelheid algemene programmeerkennis, maar hebben geen toegang tot de specifieke, niet-publieke componentenbibliotheek van de agency.
-    \item[Gespecialiseerde UI-Generator (v0.dev):] v0 is een generatieve AI-tool van Vercel, specifiek geoptimaliseerd voor het bouwen van gebruikersinterfaces in React en Tailwind CSS. Deze tool is geselecteerd omdat het de huidige industriestandaard is voor snelle UI-prototyping.
-    \item[Context-Aware setup (MCP-gebaseerde PoC):] Dit is de experimentele opstelling waarbij een LLM (zoals Claude 3.5 Sonnet) via het \textit{Model Context Protocol} (MCP) wordt verbonden met een lokale server. Deze server ontsluit de documentatie, code-standaarden en de React-componenten van Ballistix Digital.
-\end{description}
-
-\section{Experimentele Procedure en Workflow}
-\label{sec:procedure}
-
-Het experiment wordt uitgevoerd in een gecontroleerde omgeving om de variabelen zuiver te houden. De workflow verloopt voor elk scenario volgens een vast stramien:
+Het onderzoek is onderverdeeld in vijf opeenvolgende fasen. In lijn met de HOGENT-richtlijnen worden de resultaten van fase 3, 4 en 5 elk in een afzonderlijk hoofdstuk gedetailleerd uitgewerkt.
 
 \begin{enumerate}
-    \item \textbf{Input-voorbereiding:} Voor elke testcase (visueel, functioneel, technisch) wordt een identiek pakket aan informatie klaargezet.
-    \item \textbf{Promp-engineering:} Er wordt gebruikgemaakt van een gestandaardiseerd 'System Prompt' voor de generieke en MCP-tools om de instructie-bias te minimaliseren.
-    \item \textbf{Generatie-fase:} De code wordt gegenereerd en direct geëxporteerd naar een specifieke Git-branch per scenario.
-    \item \textbf{Integratie-test:} De gegenereerde code wordt geplaatst in zowel een leeg project als in de bestaande Ballistix-projecttemplate om de compatibiliteit te testen.
+    \item \textbf{Fase 1: Contextanalyse en Nulmeting (As-Is):} 
+    De doelstelling is het kwantificeren van de huidige manuele projectopstart. Via observatie en \textit{time-tracking} bij drie senior developers wordt de baseline voor \textit{development velocity} en de initiële \textit{Architectural Debt} vastgesteld.
+    \textit{Deliverable: Baseline-rapport met huidige tijdsbesteding en foutgevoeligheid.}
+
+    \item \textbf{Fase 2: Literatuurstudie en Requirements Definitie:} 
+    Op basis van de \textit{state-of-the-art} (Hoofdstuk~\ref{ch:stand-van-zaken}) worden de technische vereisten voor de PoC opgesteld. Hierbij wordt de \textit{Single Source of Truth} (de componentenbibliotheek) formeel gedocumenteerd voor MCP-ontsluiting.
+    \textit{Deliverable: Requirements-matrix en technisch ontwerp van de agentic workflow.}
+
+    \item \textbf{Fase 3: Ontwikkeling van de MCP-gebaseerde Workflow (PoC):} 
+    In deze fase wordt de experimentele opstelling gebouwd. Dit omvat de implementatie van een MCP-server en de configuratie van een \textit{Plan-Act-Reflect} (PAR) cyclus met een \textit{Explanation Gate}.
+    \textit{Deliverable: Functionele agentic workflow (zie Hoofdstuk~\ref{ch:poc}).}
+
+    \item \textbf{Fase 4: Experimentele Validatie met Double-Checks:} 
+    Uitvoering van de testmatrix (Sectie~\ref{sec:testmatrix}). Hierbij wordt specifiek de \textit{Look Back}-cyclus getest: kan de agent autonoom afwijkingen van het Design System detecteren en corrigeren? 
+    \textit{Deliverable: Dataset van gegenereerde projectstructuren en correctielogs.}
+
+    \item \textbf{Fase 5: Resultatenanalyse en Evaluatie (To-Be):} 
+    De output van de PoC wordt vergeleken met de baseline uit fase 1. Gebruikmakend van metrieken zoals de \textit{Maintainability Index} en \textit{Technical Debt Ratio} wordt de effectiviteit van de workflow bepaald.
+    \textit{Deliverable: Vergelijkende analyse en finaal advies (zie Hoofdstuk~\ref{ch:evaluatie}).}
 \end{enumerate}
 
-\section{Onderzoeksmatrix}
+\section{Onderzoeksmatrix en Scenario's}
 \label{sec:testmatrix}
 
-De kern van de methodologie is de test-matrix waarin de drie tools worden afgezet tegen drie kwalitatief verschillende inputbronnen. Dit resulteert in negen unieke testscenario's (zie Tabel~\ref{tab:testmatrix-uitgebreid}).
+Om de robuustheid van de agentic workflow te testen, worden drie scenario's doorlopen. Elk scenario bootst een typische agency-briefing na om de variabele "context-gevoeligheid" te meten.
 
 \begin{table}[h]
-  \centering
-  \begin{tabular}{l|ccc}
-    \toprule
-    \textbf{Inputbron} & \textbf{Generiek} & \textbf{v0.dev} & \textbf{MCP-PoC} \\
-    \midrule
-    \textbf{Visueel} (Screenshot/Figma) & Scenario A1 & Scenario A2 & Scenario A3 \\
-    \textbf{Functioneel} (User Story) & Scenario B1 & Scenario B2 & Scenario B3 \\
-    \textbf{Technisch} (Dev Prompt) & Scenario C1 & Scenario C2 & Scenario C3 \\
-    \bottomrule
-  \end{tabular}
-  \caption{Uitgebreide test-matrix voor de vergelijking van AI-geassisteerde workflows.}
-  \label{tab:testmatrix-uitgebreid}
+  \small
+    \begin{tabularx}{\textwidth}{|l|X|X|X|}
+    \hline
+    \textbf{Briefing Type} & \textbf{Conditie A (Baseline)} & \textbf{Conditie B (Unrestricted)} & \textbf{Conditie C (Agentic+MCP)} \\ \hline
+    Figma Export & Manuele interpretatie & Lovable / v0.dev & PoC met Design Tokens \\ \hline
+    User Story & Manuele mappenstructuur & Standaard LLM prompt & PoC met Architectural Scaffolding \\ \hline
+    Tech Spec & Manuele Boilerplate setup & Cursor (zonder MCP) & PoC met Type-safe Validation \\ \hline
+    \end{tabularx}
+  \caption{Testmatrix voor de vergelijking van projectopstart-workflows.}
+  \label{tab:testmatrix}
 \end{table}
 
-
-
-\section{Kwaliteitsmeting en Evaluatiekader}
+\section{Evaluatiekader: Kwantitatieve Metrieken}
 \label{sec:kwaliteitsmeting}
 
-Om de "correctheid" van de oplossing objectief te bepalen, wordt elk scenario geëvalueerd op basis van vier kwantitatieve en kwalitatieve KPI's:
+In tegenstelling tot subjectieve beoordelingen, wordt de kwaliteit in dit onderzoek geoperationaliseerd aan de hand van de volgende parameters:
 
-\subsection{1. Design System Compliance}
-Er wordt gemeten in welke mate de AI gebruikmaakt van de bestaande \textit{Design Tokens} (kleuren, spatiëring) en herbruikbare React-componenten. 
 \begin{itemize}
-    \item \textbf{Score:} Percentage correct aangeroepen agency-componenten t.o.v. nieuw gegenereerde (generieke) HTML-elementen.
-\end{itemize}
-
-\subsection{2. Technical Correctness \& Compilation}
-Dit criterium meet of de code direct uitvoerbaar is binnen de agency-stack.
-\begin{itemize}
-    \item \textbf{Meting:} Aantal \textit{Linting}-fouten en TypeScript-errors bij de eerste build.
-\end{itemize}
-
-\subsection{3. Correction Overhead (Tijdmeting)}
-Dit is de meest kritieke factor voor de agency-efficiëntie. Er wordt gemeten hoeveel tijd een senior developer nodig heeft om de gegenereerde code "productierijp" te maken (refactoring).
-\begin{itemize}
-    \item \textbf{Meting:} Tijd in minuten benodigd voor correcties.
-\end{itemize}
-
-\subsection{4. Architectural Fit}
-Er wordt beoordeeld of de AI de mappenstructuur en de scheiding van logica (components, hooks, types) respecteert zoals gedefinieerd in de Ballistix-template.
-\begin{itemize}
-    \item \textbf{Meting:} Score op een Likert-schaal (1-5) door een technisch expert.
+    \item \textbf{Architectural Fit (TDR):} De \textit{Technical Debt Ratio}, berekend als de verhouding tussen de benodigde hersteltijd en de totale generatietijd.[2]
+    \item \textbf{Code Integriteit (MI):} De \textit{Maintainability Index}. Een score $> 20$ is vereist voor acceptatie zonder handmatige refactoring.[3]
+    \item \textbf{Correction Overhead:} De effectieve tijd in minuten die een developer spendeert aan de \textit{Explanation Gate} en het corrigeren van AI-hallucinaties.[4]
+    \item \textbf{Structural Complexity:} De \textit{Cyclomatic Complexity} van de gegenereerde hoofdcomponenten, met een streefwaarde $< 10$.[5]
 \end{itemize}

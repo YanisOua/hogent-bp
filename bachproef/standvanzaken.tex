@@ -1,39 +1,71 @@
-\chapter{\IfLanguageName{dutch}{Stand van zaken}{State of the art}}%
+%%=============================================================================
+%% Stand van zaken
+%%=============================================================================
+
+\chapter{\IfLanguageName{dutch}{Stand van zaken}{State of the art}}
 \label{ch:stand-van-zaken}
 
-Dit hoofdstuk biedt een diepgaande analyse van de huidige wetenschappelijke en industriële context met betrekking tot de automatisering van de projectopstart. We verkennen de spanning tussen ontwikkelsnelheid en codekwaliteit, de evolutie van technische schuld in het tijdperk van generatieve AI, en de rol van gestructureerde design-systemen als fundament voor betrouwbare automatisering.
+Dit hoofdstuk bespreekt de literatuur die relevant is voor het optimaliseren van de initiële projectopstart van frontend-applicaties binnen een gestandaardiseerde agency-omgeving. Waar de inleiding het praktische probleem en de onderzoeksvraag introduceerde, gaat dit hoofdstuk dieper in op de theoretische en technologische ontwikkelingen die dit probleem kunnen ondersteunen of oplossen. Eerst wordt gekeken naar de context van digitale agencies en de spanning tussen snelheid en consistentie. Daarna worden relevante concepten zoals \textit{agentic programming}, het \textit{Model Context Protocol} (MCP), technische schuld en kwaliteitsmetrieken besproken. Deze literatuur vormt de basis voor de methodologische keuzes in Hoofdstuk~\ref{ch:methodologie}.
 
-\section{De Metafoor van Technical Debt}
-\label{sec:td-fundament}
+\section{De agency-context: consistentie en efficiëntie}
+\label{sec:agency-context}
 
-Het concept \textit{Technical Debt} (TD), voor het eerst geïntroduceerd door Ward Cunningham, beschrijft de extra kosten die ontstaan wanneer tijdens de ontwikkeling wordt gekozen voor een snelle, suboptimale oplossing in plaats van een kwalitatieve, toekomstbestendige benadering. Volgens een grootschalige mapping-studie door \textcite{Li2014} is TD geen monolithisch blok, maar kan het worden onderverdeeld in tien categorieën, waaronder code-, design- en architectuurschuld.
+Binnen digitale agencies speelt de initiële opstart van een project een belangrijke rol in de doorlooptijd en voorspelbaarheid van het ontwikkelproces. Organisaties die met een gestandaardiseerde architectuur werken, proberen herhaalbare componenten en afspraken zoveel mogelijk te hergebruiken om de kwaliteit en consistentie van nieuwe projecten te bewaken. Tegelijk blijft de opstartfase vaak gedeeltelijk manueel, waardoor ontwikkelaars nog steeds veel tijd besteden aan structureel gelijkaardige taken zoals het opzetten van mappenstructuren, navigatie, formulieren en basisconfiguratie.
 
-Het onderzoek benadrukt dat vooral de \textbf{onderhoudbaarheid (maintainability)} het grootste slachtoffer is van onbeheerde schuld \autocite{Li2014}. In een agency-context betekent dit dat een snelle projectopstart zonder strikte standaarden direct leidt tot hogere kosten in de latere fasen van de levenscyclus van de applicatie.
+Onderzoek toont aan dat AI-ondersteunde ontwikkeling de snelheid van softwareontwikkeling kan verhogen, maar dat deze winst niet automatisch leidt tot een volledig efficiënte workflow wanneer de gegenereerde output niet aansluit op de bestaande context \autocite{Paradis2025}. In een agency-omgeving ontstaat daardoor een spanningsveld tussen snelheid en standaardisatie: hoe sneller een oplossing gegenereerd wordt, hoe groter het risico dat bijkomende correcties nodig zijn om die oplossing in lijn te brengen met de interne architectuur en huisstijl. Het \textit{Design System} fungeert in dat verband als een \textit{Single Source of Truth} voor visuele en structurele consistentie \autocite{Fang2024}.
 
-\section{AI-Induced Technical Debt: Een Nieuw Paradigma}
-\label{sec:ai-td-paradox}
+\section{Agentic programming}
+\label{sec:agentic-programming}
 
-Met de integratie van Large Language Models (LLMs) in de ontwikkelworkflow is de aard van technische schuld veranderd. \textcite{Moreschini2026} introduceert de term \textit{AI-induced Technical Debt}. In tegenstelling tot traditionele schuld, die vaak een bewuste keuze is van een ontwikkelaar, is AI-schuld vaak onbedoeld en moeilijker te detecteren.
+\textit{Agentic programming} verwijst naar een vorm van AI-ondersteunde ontwikkeling waarbij een model niet enkel antwoorden genereert, maar ook taken kan plannen, uitvoeren en bijsturen \autocite{Eastman2025}. In tegenstelling tot klassieke promptgebaseerde codegeneratie ligt de focus hier op het opdelen van een doel in uitvoerbare stappen en op het iteratief verfijnen van de output. Voor de initiële projectopstart zijn vooral drie patronen relevant.
 
-Hoewel experimenteel onderzoek bij Google aantoont dat AI de snelheid op complexe taken met gemiddeld 21\% verhoogt \autocite{Paradis2025}, waarschuwt de industrie voor de kwalitatieve keerzijde. Uit een longitudinale analyse van 153 miljoen regels code door \textcite{Harding2024} blijkt dat AI-geassisteerde ontwikkeling leidt tot een explosie in \textbf{code churn} en gedupliceerde code. AI-modellen neigen naar het genereren van "nieuwe" codeblokken in plaats van het aanroepen van bestaande abstracties of bibliotheken, wat de technische schuld met factor acht kan doen toenemen \autocite{Harding2024}.
+\begin{itemize}
+    \item \textbf{Planning:} de agent splitst een doel op in kleinere subtaken alvorens actie te ondernemen \autocite{Rao2025}.
+    \item \textbf{Reflection:} de agent evalueert de eigen output en corrigeert fouten of inconsistenties waar nodig \autocite{Eastman2025}.
+    \item \textbf{CodeAct:} de agent interageert rechtstreeks met het bestandssysteem of de ontwikkelomgeving om code te genereren, aan te passen en te testen \autocite{Rao2025}.
+\end{itemize}
 
+Deze evolutie naar meer autonome workflows sluit aan bij recente ontwikkelingen in \textit{agentic CLIs} en geïntegreerde ontwikkelomgevingen, waarin AI-systemen niet langer losstaan van het ontwikkelproces maar er actief in meedraaien \autocite{Eastman2025, Sergeyuk2024}. Voor een context zoals Ballistix Digital is dat relevant omdat de AI dan niet enkel code moet genereren, maar ook moet kunnen omgaan met de bestaande conventies en projectstructuren.
 
+\section{Model Context Protocol (MCP)}
+\label{sec:mcp-architectuur}
 
-\section{Design Systemen als Single Source of Truth}
-\label{sec:design-systems-research}
+Het \textit{Model Context Protocol} (MCP) is een open standaard die ontworpen werd om de integratie tussen AI-systemen en externe databronnen of tools te vereenvoudigen \autocite{Anthropic2024}. In plaats van voor elke bron een aparte integratie te bouwen, biedt MCP een gestandaardiseerde manier om context, tools en informatie beschikbaar te maken voor AI-toepassingen. Dat maakt het protocol interessant voor scenario's waarin een model niet alleen moet redeneren, maar ook actuele projectinformatie of bedrijfsspecifieke context moet gebruiken.
 
-De literatuur wijst uit dat een volwassen \textit{Design System} de meest effectieve remedie is tegen inconsistentie. Een design system fungeert niet enkel als een stijlgids, maar als een gecentraliseerde bibliotheek van herbruikbare code-artefacten. Volgens onderzoek van Forrester in opdracht van Figma levert het gebruik van een dergelijk systeem een efficiëntiewinst op van 34\% tot 42\% \autocite{Forrester2024}.
+\subsection{Architecturale componenten}
+MCP werkt volgens een client-host-servermodel. De host, bijvoorbeeld een IDE of AI-toepassing, beheert de interactie met de gebruiker, terwijl MCP-servers specifieke context of functionaliteit ontsluiten via \textit{Resources}, \textit{Tools} en \textit{Prompts} \autocite{Anthropic2024}. De communicatie verloopt via JSON-RPC 2.0, met onder meer \textit{stdio} voor lokale toepassingen en \textit{SSE} voor externe services \autocite{GoogleCloud2024}. Hierdoor kan context op een meer gestructureerde en herbruikbare manier aan een model worden aangeboden.
 
-Een cruciaal element in de automatisering hiervan zijn \textbf{Design Tokens}. Dit zijn machine-leesbare variabelen (zoals JSON-bestanden) die visuele beslissingen vastleggen. \textcite{SaltNLP2025} stelt dat het automatiseren van de "Design-to-Code" hand-off enkel succesvol kan zijn als de AI de visuele intentie kan mappen op gestructureerde data. Zonder deze tokens vervalt AI in "visual cloning", waarbij de code er visueel correct uitziet maar technisch onhoudbaar is.
+\subsection{MCP en RAG}
+MCP verschilt van \textit{Retrieval-Augmented Generation} (RAG), dat vooral gericht is op het ophalen van relevante tekstfragmenten op basis van gelijkenis in vectorruimte \autocite{TrueFoundry2025}. Waar RAG vooral nuttig is voor documentatie en kennisraadpleging, laat MCP toe om tools deterministisch aan te roepen en zo directe acties uit te voeren binnen een workflow \autocite{TrueFoundry2025, Anthropic2024}. Voor de projectopstart van frontend-applicaties betekent dit dat MCP niet enkel kan helpen om informatie op te halen, maar ook om bijvoorbeeld projectstructuren, componenten of configuraties actief te inspecteren en te valideren.
 
-\section{Methoden voor Context-Bewuste Generatie}
-\label{sec:context-methods}
+\section{Technische schuld en kwaliteitsrisico's}
+\label{sec:td-analysis}
 
-De huidige "state-of-the-art" in AI-ondersteuning verschuift van algemene assistentie naar contextuele integratie. Hierbij worden twee hoofdpaden onderscheiden:
+AI-geassisteerde codegeneratie kan leiden tot technische schuld wanneer gegenereerde code functioneel werkt, maar architecturaal of structureel minder onderhoudbaar is \autocite{Li2014}. Dit risico is in frontendomgevingen bijzonder relevant, omdat daar vaak veel herbruikbare componenten, stijlafspraken en projectconventies samenkomen. Voorbeelden hiervan zijn overmatig grote componenten of te sterke koppelingen tussen modules, wat de onderhoudbaarheid van een project onder druk zet \autocite{Motiwala2026, Brilworks2026}.
 
+Naast technische schuld speelt ook \textit{epistemic debt} een rol: de kloof tussen de complexiteit van de gegenereerde oplossing en het begrip dat ontwikkelaars nog hebben van die oplossing \textcite{Yan2026}. Onderzoek naar \textit{competence collapse} toont aan dat ontwikkelaars die AI-tools gebruiken zonder voldoende validatie later moeilijkheden kunnen ondervinden bij onderhoudstaken \autocite{Yan2026}. Dat suggereert dat efficiëntiewinst pas waardevol is wanneer de gegenereerde output ook begrijpelijk, aanpasbaar en controleerbaar blijft.
+
+\section{Kwantificering van codekwaliteit}
+\label{sec:kwaliteit-metrieken}
+
+Om de kwaliteit van gegenereerde projectopstart objectief te evalueren, is het nodig om duidelijke metrieken te gebruiken. In deze bachelorproef worden daarom enkele veelgebruikte softwaremetrieken aangewend om de invloed van verschillende aanpakken te vergelijken. Die metrieken maken het mogelijk om niet alleen naar snelheid, maar ook naar structurele kwaliteit en onderhoudbaarheid te kijken \autocite{McCabe1976, Oman1992, Microsoft2025}.
+
+\begin{itemize}
+    \item \textbf{Cyclomatic Complexity (CC):} meet het aantal onafhankelijke paden in de code. Voor onderhoudbare componenten wordt doorgaans een lage waarde nagestreefd \autocite{McCabe1976, SonarSource2024}.
+    \item \textbf{Maintainability Index (MI):} is een samengestelde score die een indicatie geeft van de onderhoudbaarheid van de codebasis \autocite{Oman1992, Microsoft2025}.
+    \item \textbf{Prompt$\rightarrow$Commit Success Rate:} geeft aan welk aandeel van de gegenereerde output zonder manuele herschrijving bruikbaar is, en is daarmee een indicatie van de mate waarin context en instructies effectief zijn \autocite{Augment2025}.
+\end{itemize}
+
+\section{Workflow-optimalisatie}
+\label{sec:workflow-optimalisatie}
+
+Om de voordelen van AI te behouden en tegelijk de risico's van technische en epistemische schuld te beperken, wordt in de literatuur steeds vaker gewezen op het belang van bijkomende validatiestappen \autocite{Yan2026}. Een mogelijke aanpak is het invoeren van een \textit{Explanation Gate}, waarbij de agent zijn keuzes expliciet moet verantwoorden voordat de output wordt geïntegreerd. Zulke tussenstappen helpen om onduidelijke of foutieve architecturale beslissingen sneller op te sporen.
+
+Een geoptimaliseerde workflow kan daarnaast bestaan uit een iteratieve \textit{Look Back}-cyclus:
 \begin{enumerate}
-    \item \textbf{Retrieval-Augmented Generation (RAG):} Hierbij krijgt de AI toegang tot documentatie net voor het genereren van de code. Dit verhoogt de accuraatheid van library-aanroepen aanzienlijk.
-    \item \textbf{Model Context Protocol (MCP):} Een recenter protocol dat een directe link legt tussen een lokale server (bijv. met de Ballistix-componenten) en het AI-model. Dit elimineert de noodzaak om handmatig documentatie in een prompt te plakken.
+    \item \textbf{Planning Phase:} het uitwerken van een plan op basis van de beschikbare context.
+    \item \textbf{Architectural Review:} het controleren van de output op architecturale consistentie, bijvoorbeeld door een tweede beoordelingsstap \autocite{Yan2026, DigitalApplied2025}.
+    \item \textbf{Test-Driven Generation:} het genereren van testcode of controlemomenten vóór de finale oplevering van de boilerplate \autocite{DigitalApplied2025}.
 \end{enumerate}
 
-De literatuur suggereert dat de "correction overhead" --- de tijd die nodig is om AI-fouten te herstellen --- drastisch afneemt wanneer de AI opereert binnen de grenzen van een specifieke architecturale context \autocite{Moreschini2026}. Dit vormt de directe aanleiding voor de vergelijkende studie in deze bachelorproef.
+Deze benadering maakt duidelijk dat snelheid en kwaliteit niet noodzakelijk tegengesteld zijn, zolang de workflow voldoende ondersteuning biedt voor validatie, reflectie en aanpassing. De combinatie van contextvoorziening, kwaliteitscontrole en iteratieve verbetering vormt daarmee de theoretische basis voor het vervolg van dit onderzoek in de methodologie.

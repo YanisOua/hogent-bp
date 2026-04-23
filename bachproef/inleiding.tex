@@ -5,24 +5,39 @@
 \chapter{\IfLanguageName{dutch}{Inleiding}{Introduction}}
 \label{ch:inleiding}
 
-De digitale agency-sector staat onder constante druk om de "time-to-market" van webapplicaties te verkorten. Bij Ballistix Digital is de initiële projectopstart momenteel een arbeidsintensief proces. Hoewel generatieve AI nieuwe mogelijkheden biedt, blijft de integratie van deze tools binnen een specifieke huisstijl een onontgonnen gebied.
+In de huidige softwaresector groeit de druk om gelijkaardige webapplicaties sneller en consistenter op te leveren. Voor digital agencies is niet alleen de \textit{time-to-market} van het eindproduct belangrijk, maar ook de \textit{time-to-demo} in presales- en projectcontext. Bij Ballistix Digital worden B2B-webapplicaties ontwikkeld volgens een gestandaardiseerde architectuur, gebaseerd op een interne React-componentenbibliotheek en vaste code-stijlen. Daardoor zijn veel bouwstenen, zoals navigatiestructuren, formulieren en tabellen, in principe herbruikbaar. Toch verloopt de initiële projectopstart vandaag nog grotendeels manueel. Dat maakt het proces tijdsintensief en gevoelig voor inconsistenties. Deze bachelorproef onderzoekt hoe die opstart efficiënter kan worden ingericht, met behoud van kwaliteit, consistentie en aansluiting op de bestaande architectuur.
 
 \section{\IfLanguageName{dutch}{Probleemstelling}{Problem Statement}}
 \label{sec:probleemstelling}
-De wildgroei aan AI-generatietools biedt snelheid, maar mist vaak de context van bedrijfsspecifieke componentenbibliotheken. Dit leidt tot een "inconsistentiekloof": code wijkt af van de standaarden, wat resulteert in een hoge \textit{correction overhead}. Er is momenteel onduidelijkheid over welke tool of methode de meest "correcte" output levert voor een agency-specifieke workflow.
+De initiële projectopstart van een nieuwe frontend-applicatie vraagt vandaag nog veel repetitief werk. Ontwikkelaars besteden tijd aan het opzetten van mappenstructuren, het definiëren van datastructuren, het configureren van navigatie en het uitwerken van standaardcomponenten. Hoewel deze taken sterk op elkaar lijken van project tot project, worden ze vaak opnieuw manueel uitgevoerd. Daardoor ontstaat een proces dat niet alleen tijd kost, maar ook ruimte laat voor variatie in kwaliteit en stijl.
+
+Binnen de softwaresector wordt steeds vaker gekeken naar automatisering en AI-ondersteuning om dit soort repetitieve taken te vereenvoudigen. Tegelijk blijft het een uitdaging om dergelijke oplossingen af te stemmen op een specifieke bedrijfscontext. Generieke tools kunnen snel output genereren, maar houden vaak onvoldoende rekening met interne componentenbibliotheken, architecturale afspraken en huisstijlrichtlijnen. Dit kan leiden tot output die functioneel bruikbaar is, maar nog extra correctiewerk vereist om volledig binnen de bestaande standaard te passen. Deze bijkomende correcties vergroten de totale inspanning en beperken de verwachte winst van automatisering.
 
 \section{\IfLanguageName{dutch}{Onderzoeksvraag}{Research question}}
 \label{sec:onderzoeksvraag}
-De centrale onderzoeksvraag van deze bachelorproef luidt: 
-\textit{Welke AI-geassisteerde workflow levert de meest kwalitatieve en consistente projectstart op voor frontend-applicaties binnen een specifieke agency-huisstijl?}
+De centrale onderzoeksvraag van deze bachelorproef luidt:
+\textit{Welke aanpak biedt binnen een specifieke agency-huisstijl de beste balans tussen snelheid, kwaliteit en consistentie bij de initiële projectopstart van frontend-applicaties?}
 
-Deelvragen:
-\begin{itemize}
-  \item Hoe verhouden algemene LLM's zich tot gespecialiseerde tools en een context-geoptimaliseerde setup (PoC via MCP) wat betreft consistentie?
-  \item Welke invloed heeft het type input (visueel, functioneel of technisch) op de nauwkeurigheid?
-  \item Bij welke tool is de \textit{correction overhead} het kleinst bij integratie in een bestaand template?
-\end{itemize}
+De volgende deelvragen ondersteunen het onderzoek:
+\begin{enumerate}
+    \item \textbf{Deelvraag 1 (Analyse):} Welke stappen in de huidige projectopstart bij Ballistix Digital zijn het meest repetitief en tijdrovend?
+    \item \textbf{Deelvraag 2 (Vergelijking):} In welke mate verschillen algemene LLM's, gespecialiseerde tools en een context-geoptimaliseerde opzet in hun vermogen om consistente output te genereren?
+    \item \textbf{Deelvraag 3 (Input-validatie):} Welke invloed heeft het type input op de nauwkeurigheid en bruikbaarheid van de gegenereerde projectonderdelen?
+    \item \textbf{Deelvraag 4 (Evaluatie):} Welke aanpak vereist de minste correcties en de kortste totale doorlooptijd bij de initiële projectopstart?
+\end{enumerate}
 
 \section{\IfLanguageName{dutch}{Onderzoeksdoelstelling}{Research objective}}
 \label{sec:onderzoeksdoelstelling}
-Het doel is een vergelijkende studie tussen diverse AI-methoden. Er wordt een Proof-of-Concept (PoC) ontwikkeld op basis van het Model Context Protocol (MCP) om te testen of specifieke context de kwaliteit verhoogt.
+Het doel van dit onderzoek is om verschillende aanpakken voor de initiële projectopstart te analyseren en met elkaar te vergelijken binnen de context van Ballistix Digital. Op basis daarvan wordt een \textbf{Proof-of-Concept (PoC)} ontwikkeld om te evalueren in welke mate bedrijfsspecifieke context de kwaliteit, consistentie en efficiëntie van de output kan verbeteren. Daarbij wordt onderzocht of een context-gedreven aanpak kan bijdragen aan minder correctiewerk, een vlottere opstart en een betere aansluiting op de bestaande architectuur.
+
+\section{\IfLanguageName{dutch}{Opzet van deze bachelorproef}{Structure of this bachelor thesis}}
+\label{sec:opzet-bachelorproef}
+De rest van deze bachelorproef is als volgt opgebouwd:
+
+In Hoofdstuk~\ref{ch:stand-van-zaken} wordt de stand van zaken binnen het domein besproken, met focus op relevante benaderingen voor automatisering, contextvoorziening en kwaliteitsbewaking.
+
+In Hoofdstuk~\ref{ch:methodologie} wordt de methodologie toegelicht, inclusief de nulmeting en de opzet van de experimenten.
+
+In Hoofdstuk~\ref{ch:poc} wordt de technische realisatie van de PoC beschreven.
+
+In Hoofdstuk~\ref{ch:conclusie} worden de resultaten geëvalueerd en de onderzoeksvragen beantwoord.
