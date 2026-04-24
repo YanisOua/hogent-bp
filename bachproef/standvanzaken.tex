@@ -1,71 +1,35 @@
-%%=============================================================================
-%% Stand van zaken
-%%=============================================================================
-
 \chapter{\IfLanguageName{dutch}{Stand van zaken}{State of the art}}
 \label{ch:stand-van-zaken}
 
-Dit hoofdstuk bespreekt de literatuur die relevant is voor het optimaliseren van de initiële projectopstart van frontend-applicaties binnen een gestandaardiseerde agency-omgeving. Waar de inleiding het praktische probleem en de onderzoeksvraag introduceerde, gaat dit hoofdstuk dieper in op de theoretische en technologische ontwikkelingen die dit probleem kunnen ondersteunen of oplossen. Eerst wordt gekeken naar de context van digitale agencies en de spanning tussen snelheid en consistentie. Daarna worden relevante concepten zoals \textit{agentic programming}, het \textit{Model Context Protocol} (MCP), technische schuld en kwaliteitsmetrieken besproken. Deze literatuur vormt de basis voor de methodologische keuzes in Hoofdstuk~\ref{ch:methodologie}.
+Dit hoofdstuk bespreekt de literatuur die relevant is voor het optimaliseren van de initiële projectopstart van frontend-applicaties binnen een gestandaardiseerde agency-omgeving. Waar de inleiding de praktische uitdagingen rond repetitief werk en inconsistentie introduceerde, verkent dit hoofdstuk mogelijke aanpakken om dit proces te verbeteren. Eerst wordt de brede context van AI-ondersteunde codegeneratie en het daadwerkelijke gebruik in de praktijk geschetst. Vervolgens wordt dieper ingegaan op de integratie van domeinspecifieke context via standaarden zoals het Model Context Protocol (MCP) en het gebruik van \textit{agentic workflows}. Tot slot belicht dit hoofdstuk de impact van deze aanpakken op technische schuld en de noodzaak van objectieve evaluatiemetrieken. Deze literatuur vormt de theoretische basis om te bepalen onder welke voorwaarden een context-gedreven aanpak de beste balans biedt tussen efficiëntie, kwaliteit en consistentie.
 
-\section{De agency-context: consistentie en efficiëntie}
-\label{sec:agency-context}
+\section{LLM-codegeneratie in software engineering}
+\label{sec:llm-codegeneratie}
 
-Binnen digitale agencies speelt de initiële opstart van een project een belangrijke rol in de doorlooptijd en voorspelbaarheid van het ontwikkelproces. Organisaties die met een gestandaardiseerde architectuur werken, proberen herhaalbare componenten en afspraken zoveel mogelijk te hergebruiken om de kwaliteit en consistentie van nieuwe projecten te bewaken. Tegelijk blijft de opstartfase vaak gedeeltelijk manueel, waardoor ontwikkelaars nog steeds veel tijd besteden aan structureel gelijkaardige taken zoals het opzetten van mappenstructuren, navigatie, formulieren en basisconfiguratie.
+Recente overzichtsstudies zoals \textit{A Survey on Large Language Models for Code Generation} tonen aan dat Large Language Models (LLM's) inmiddels breed worden ingezet voor diverse softwaretaken, gaande van algemene codegeneratie tot testautomatisering. Hoewel deze modellen over de hele lijn efficiëntiewinst opleveren, blijkt uit de \textit{Systematic Survey on Large Language Models for Code Generation} dat de betrouwbaarheid, effectiviteit en beveiliging van de gegenereerde code grote uitdagingen blijven. Deze beperkingen maken dat algemene modellen vaak moeite hebben met het afleveren van direct inzetbare output zonder manuele correcties. Voor dit onderzoek betekent dit dat de focus niet louter op de generatie van code kan liggen, maar dat de betrouwbaarheid binnen een specifieke projectcontext primair staat.
 
-Onderzoek toont aan dat AI-ondersteunde ontwikkeling de snelheid van softwareontwikkeling kan verhogen, maar dat deze winst niet automatisch leidt tot een volledig efficiënte workflow wanneer de gegenereerde output niet aansluit op de bestaande context \autocite{Paradis2025}. In een agency-omgeving ontstaat daardoor een spanningsveld tussen snelheid en standaardisatie: hoe sneller een oplossing gegenereerd wordt, hoe groter het risico dat bijkomende correcties nodig zijn om die oplossing in lijn te brengen met de interne architectuur en huisstijl. Het \textit{Design System} fungeert in dat verband als een \textit{Single Source of Truth} voor visuele en structurele consistentie \autocite{Fang2024}.
+Daarnaast wijst de \textit{Survey on LLM-based Code Generation for Low-Resource and Domain-Specific Programming Languages} erop dat het gebruik van LLM's in domeinspecifieke omgevingen met beperkte trainingsdata bijzonder complex is. Algemene modellen missen vaak de nodige context over interne componentenbibliotheken en architecturale afspraken, en standaard benchmarks ontbreken om deze specifieke prestaties te evalueren. Dit is cruciaal voor de probleemstelling van Ballistix Digital, waar de projectopstart sterk afhankelijk is van een gesloten, interne React-bibliotheek. Het benadrukt de noodzaak om te onderzoeken in welke mate extra context de kwaliteit en bruikbaarheid van de output verhoogt.
 
-\section{Agentic programming}
-\label{sec:agentic-programming}
+\section{Agentic workflows en tool-use}
+\label{sec:agentic-workflows}
 
-\textit{Agentic programming} verwijst naar een vorm van AI-ondersteunde ontwikkeling waarbij een model niet enkel antwoorden genereert, maar ook taken kan plannen, uitvoeren en bijsturen \autocite{Eastman2025}. In tegenstelling tot klassieke promptgebaseerde codegeneratie ligt de focus hier op het opdelen van een doel in uitvoerbare stappen en op het iteratief verfijnen van de output. Voor de initiële projectopstart zijn vooral drie patronen relevant.
+Naast het aanleveren van passieve context, verschuift de literatuur naar actieve, agent-gedreven benaderingen. De paper \textit{From LLMs to LLM-based Agents for Software Engineering} stelt dat het toevoegen van autonomie, besluitvormingscapaciteiten en tool-integratie een taalmodel transformeert in een AI-agent. Deze agents kunnen complexe taken, zoals de opstart van een volledig project of testgeneratie, opdelen in kleinere stappen en iteratief uitvoeren. Deze autonomie introduceert echter ook onvoorspelbaarheid; een agent kan foute beslissingen nemen of in een eindeloze lus terechtkomen wanneer de feedback loop ontbreekt. Dit onderstreept het belang voor dit onderzoek om te evalueren onder welke voorwaarden \textit{agentic workflows} daadwerkelijk tijdswinst opleveren bij de projectopstart zonder in te boeten op stabiliteit.
 
-\begin{itemize}
-    \item \textbf{Planning:} de agent splitst een doel op in kleinere subtaken alvorens actie te ondernemen \autocite{Rao2025}.
-    \item \textbf{Reflection:} de agent evalueert de eigen output en corrigeert fouten of inconsistenties waar nodig \autocite{Eastman2025}.
-    \item \textbf{CodeAct:} de agent interageert rechtstreeks met het bestandssysteem of de ontwikkelomgeving om code te genereren, aan te passen en te testen \autocite{Rao2025}.
-\end{itemize}
+Daarnaast beargumenteert de studie \textit{If LLM Is the Wizard, Then Code Is the Wand} dat de integratie van code en tool-gebruik cruciaal is voor het redeneer- en planningsvermogen van LLM's. Modellen die acties kunnen uitvoeren (zoals bestanden lezen of commando's draaien), blijken beter in staat om complexe engineeringstaken af te ronden dan modellen die enkel tekst genereren. Een kanttekening hierbij is dat dit ook hogere eisen stelt aan de kwaliteitscontrole van de uitgevoerde acties. Voor de context van dit onderzoek toont dit aan dat het gebruik van tools essentieel is om de kloof tussen theorie en werkende projectcode te overbruggen.
 
-Deze evolutie naar meer autonome workflows sluit aan bij recente ontwikkelingen in \textit{agentic CLIs} en geïntegreerde ontwikkelomgevingen, waarin AI-systemen niet langer losstaan van het ontwikkelproces maar er actief in meedraaien \autocite{Eastman2025, Sergeyuk2024}. Voor een context zoals Ballistix Digital is dat relevant omdat de AI dan niet enkel code moet genereren, maar ook moet kunnen omgaan met de bestaande conventies en projectstructuren.
+Tot slot is het belangrijk om te kijken naar hoe ontwikkelaars deze systemen in de praktijk gebruiken. Uit \textit{Beyond Code Generation: An Observational Study of ChatGPT Usage in Software Engineering Practice} blijkt dat ontwikkelaars LLM's vaker gebruiken als hulpmiddel voor uitleg, brainstorming of kleine iteraties, in plaats van als volledige vervanging voor het schrijven van complexe, samenhangende codebases. Dit toont aan dat een volledig geautomatiseerde projectopstart wellicht minder realistisch is dan een aanpak waarbij de ontwikkelaar ondersteund wordt. Voor dit onderzoek rechtvaardigt het de keuze voor een iteratieve, context-gedreven aanpak waarbij de ontwikkelaar de regie behoudt.
 
-\section{Model Context Protocol (MCP)}
-\label{sec:mcp-architectuur}
+\section{Context-integratie en het Model Context Protocol (MCP)}
+\label{sec:mcp}
 
-Het \textit{Model Context Protocol} (MCP) is een open standaard die ontworpen werd om de integratie tussen AI-systemen en externe databronnen of tools te vereenvoudigen \autocite{Anthropic2024}. In plaats van voor elke bron een aparte integratie te bouwen, biedt MCP een gestandaardiseerde manier om context, tools en informatie beschikbaar te maken voor AI-toepassingen. Dat maakt het protocol interessant voor scenario's waarin een model niet alleen moet redeneren, maar ook actuele projectinformatie of bedrijfsspecifieke context moet gebruiken.
+Om de beperkingen van generieke modellen in domeinspecifieke omgevingen te overbruggen, wordt toenemend gezocht naar manieren om context en tools te structureren. De \textit{Model Context Protocol specification} beschrijft een open standaard op basis van een host-client-server model die precies dit doel dient. In plaats van ad-hoc oplossingen te bouwen voor elke databron, maakt MCP het mogelijk om op een gestandaardiseerde manier bedrijfsinterne context, \textit{Resources}, \textit{Tools} en \textit{Prompts} te delen, aldus de \textit{MCP documentation}. Hierdoor kunnen modellen redeneren over en handelen binnen een gecontroleerde omgeving. Toch moet worden opgemerkt dat MCP relatief nieuw is en niet op zichzelf de bedrijfslogica oplost. Voor dit onderzoek vormt de standaard echter een zeer relevante oplossingsrichting om te testen in welke mate een gestructureerde ontsluiting van de interne componentenbibliotheek en architectuur de efficiëntie van de projectopstart verbetert ten opzichte van traditionele prompts.
 
-\subsection{Architecturale componenten}
-MCP werkt volgens een client-host-servermodel. De host, bijvoorbeeld een IDE of AI-toepassing, beheert de interactie met de gebruiker, terwijl MCP-servers specifieke context of functionaliteit ontsluiten via \textit{Resources}, \textit{Tools} en \textit{Prompts} \autocite{Anthropic2024}. De communicatie verloopt via JSON-RPC 2.0, met onder meer \textit{stdio} voor lokale toepassingen en \textit{SSE} voor externe services \autocite{GoogleCloud2024}. Hierdoor kan context op een meer gestructureerde en herbruikbare manier aan een model worden aangeboden.
+\section{Technische schuld en onderhoudbaarheid}
+\label{sec:technische-schuld}
 
-\subsection{MCP en RAG}
-MCP verschilt van \textit{Retrieval-Augmented Generation} (RAG), dat vooral gericht is op het ophalen van relevante tekstfragmenten op basis van gelijkenis in vectorruimte \autocite{TrueFoundry2025}. Waar RAG vooral nuttig is voor documentatie en kennisraadpleging, laat MCP toe om tools deterministisch aan te roepen en zo directe acties uit te voeren binnen een workflow \autocite{TrueFoundry2025, Anthropic2024}. Voor de projectopstart van frontend-applicaties betekent dit dat MCP niet enkel kan helpen om informatie op te halen, maar ook om bijvoorbeeld projectstructuren, componenten of configuraties actief te inspecteren en te valideren.
+Een kernvraag bij het inzetten van generatieve AI is de langetermijnimpact op de codebase. Publicaties zoals \textit{How AI generated code compounds technical debt} wijzen erop dat AI-output de initiële ontwikkelsnelheid kan verhogen, maar tegelijk de onderhoudslast aanzienlijk kan vergroten als de gegenereerde code afwijkt van architecturale standaarden. Ook bronnen zoals \textit{Why AI-generated code is creating a technical debt nightmare} en \textit{The Hidden Costs of Coding With Generative AI} benadrukken dat de kortetermijnwinst in productiviteit vaak ten koste gaat van langetermijncomplexiteit. Deze literatuur waarschuwt dat code die oppervlakkig correct lijkt, structureel zwak kan zijn of niet herbruikbaar is binnen de bestaande context. Voor de agency-context van dit onderzoek is dit inzicht cruciaal: een versnelde projectopstart heeft enkel waarde als het resultaat geen extra correctiewerk oplevert of de consistentie van de codebase in gevaar brengt. Het valideert bovendien de keuze om niet alleen de opleversnelheid te meten, maar expliciet te sturen op kwaliteitsbehoud.
 
-\section{Technische schuld en kwaliteitsrisico's}
-\label{sec:td-analysis}
+\section{Evaluatiemetrieken voor codekwaliteit}
+\label{sec:evaluatiemetrieken}
 
-AI-geassisteerde codegeneratie kan leiden tot technische schuld wanneer gegenereerde code functioneel werkt, maar architecturaal of structureel minder onderhoudbaar is \autocite{Li2014}. Dit risico is in frontendomgevingen bijzonder relevant, omdat daar vaak veel herbruikbare componenten, stijlafspraken en projectconventies samenkomen. Voorbeelden hiervan zijn overmatig grote componenten of te sterke koppelingen tussen modules, wat de onderhoudbaarheid van een project onder druk zet \autocite{Motiwala2026, Brilworks2026}.
-
-Naast technische schuld speelt ook \textit{epistemic debt} een rol: de kloof tussen de complexiteit van de gegenereerde oplossing en het begrip dat ontwikkelaars nog hebben van die oplossing \textcite{Yan2026}. Onderzoek naar \textit{competence collapse} toont aan dat ontwikkelaars die AI-tools gebruiken zonder voldoende validatie later moeilijkheden kunnen ondervinden bij onderhoudstaken \autocite{Yan2026}. Dat suggereert dat efficiëntiewinst pas waardevol is wanneer de gegenereerde output ook begrijpelijk, aanpasbaar en controleerbaar blijft.
-
-\section{Kwantificering van codekwaliteit}
-\label{sec:kwaliteit-metrieken}
-
-Om de kwaliteit van gegenereerde projectopstart objectief te evalueren, is het nodig om duidelijke metrieken te gebruiken. In deze bachelorproef worden daarom enkele veelgebruikte softwaremetrieken aangewend om de invloed van verschillende aanpakken te vergelijken. Die metrieken maken het mogelijk om niet alleen naar snelheid, maar ook naar structurele kwaliteit en onderhoudbaarheid te kijken \autocite{McCabe1976, Oman1992, Microsoft2025}.
-
-\begin{itemize}
-    \item \textbf{Cyclomatic Complexity (CC):} meet het aantal onafhankelijke paden in de code. Voor onderhoudbare componenten wordt doorgaans een lage waarde nagestreefd \autocite{McCabe1976, SonarSource2024}.
-    \item \textbf{Maintainability Index (MI):} is een samengestelde score die een indicatie geeft van de onderhoudbaarheid van de codebasis \autocite{Oman1992, Microsoft2025}.
-    \item \textbf{Prompt$\rightarrow$Commit Success Rate:} geeft aan welk aandeel van de gegenereerde output zonder manuele herschrijving bruikbaar is, en is daarmee een indicatie van de mate waarin context en instructies effectief zijn \autocite{Augment2025}.
-\end{itemize}
-
-\section{Workflow-optimalisatie}
-\label{sec:workflow-optimalisatie}
-
-Om de voordelen van AI te behouden en tegelijk de risico's van technische en epistemische schuld te beperken, wordt in de literatuur steeds vaker gewezen op het belang van bijkomende validatiestappen \autocite{Yan2026}. Een mogelijke aanpak is het invoeren van een \textit{Explanation Gate}, waarbij de agent zijn keuzes expliciet moet verantwoorden voordat de output wordt geïntegreerd. Zulke tussenstappen helpen om onduidelijke of foutieve architecturale beslissingen sneller op te sporen.
-
-Een geoptimaliseerde workflow kan daarnaast bestaan uit een iteratieve \textit{Look Back}-cyclus:
-\begin{enumerate}
-    \item \textbf{Planning Phase:} het uitwerken van een plan op basis van de beschikbare context.
-    \item \textbf{Architectural Review:} het controleren van de output op architecturale consistentie, bijvoorbeeld door een tweede beoordelingsstap \autocite{Yan2026, DigitalApplied2025}.
-    \item \textbf{Test-Driven Generation:} het genereren van testcode of controlemomenten vóór de finale oplevering van de boilerplate \autocite{DigitalApplied2025}.
-\end{enumerate}
-
-Deze benadering maakt duidelijk dat snelheid en kwaliteit niet noodzakelijk tegengesteld zijn, zolang de workflow voldoende ondersteuning biedt voor validatie, reflectie en aanpassing. De combinatie van contextvoorziening, kwaliteitscontrole en iteratieve verbetering vormt daarmee de theoretische basis voor het vervolg van dit onderzoek in de methodologie.
+Om de impact op technische schuld en efficiëntie kwantificeerbaar te maken, is een duidelijke evaluatiemethode noodzakelijk. Uit voornoemde studies naar LLM-codegeneratie blijkt dat veelgebruikte metrieken zoals Pass@k en BLEU-scores weliswaar de functionele correctheid of tekstuele gelijkenis meten, maar onvoldoende de structurele kwaliteit of de mate van technische schuld vatten. Dit betekent dat traditionele AI-benchmarks tekortschieten voor het evalueren van een projectopstart, waarbij architecturale integriteit en leesbaarheid vooropstaan. Voor dit onderzoek is het daarom noodzakelijk om een bredere set van metrieken te hanteren die de balans tussen snelheid en kwaliteit weerspiegelen, zoals het meten van het benodigde correctiewerk, de totale doorlooptijd en de mate van consistentie met de huisstijl van de agency.
