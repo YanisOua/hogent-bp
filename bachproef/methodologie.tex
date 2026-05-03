@@ -5,61 +5,106 @@
 \chapter{\IfLanguageName{dutch}{Methodologie}{Methodology}}
 \label{ch:methodologie}
 
-In dit hoofdstuk wordt de onderzoeksopzet en de gevolgde procedure toegelicht. Om te bepalen welke agentic workflow de meest kwalitatieve projectopstart oplevert binnen de context van Ballistix Digital, wordt gebruikgemaakt van een \textit{ontwerponderzoek} gekoppeld aan een \textit{vergelijkend experiment}. Deze aanpak is gekozen omdat het toelaat om een technologische oplossing (MCP-server) niet alleen te ontwikkelen, maar ook objectief te toetsen aan de hand van kwantitatieve kwaliteitsmetrieken en de reductie van \textit{correction overhead}.
+In dit hoofdstuk worden de onderzoeksopzet en de gevolgde procedure toegelicht.
+Om te bepalen welke agentic workflow de meest kwalitatieve projectopstart oplevert binnen de context van Ballistix Digital, wordt gebruikgemaakt van een \textit{ontwerponderzoek} gekoppeld aan een \textit{vergelijkend experiment}.
+Deze aanpak laat toe om twee technologische benaderingen --- een meer \textit{unrestricted} AI-workflow en een meer \textit{hybride} MCP-gebaseerde workflow --- niet alleen te ontwikkelen, maar ook te toetsen aan de hand van kwantitatieve kwaliteitsmetrieken, tokenverbruik en de impact op de \textit{correction overhead} bij de projectopstart.
 
 \section{Onderzoeksfasen}
 \label{sec:onderzoeksfasen}
 
-Het onderzoek is onderverdeeld in vijf opeenvolgende fasen. In lijn met de HOGENT-richtlijnen worden de resultaten van fase 3, 4 en 5 elk in een afzonderlijk hoofdstuk gedetailleerd uitgewerkt.
+Het onderzoek is onderverdeeld in vijf opeenvolgende fasen. In lijn met de HOGENT-richtlijnen worden de resultaten van fase~3, 4 en 5 elk in een afzonderlijk hoofdstuk gedetailleerd uitgewerkt.
 
 \begin{enumerate}
-    \item \textbf{Fase 1: Contextanalyse en Nulmeting (As-Is):} 
-    De doelstelling is het kwantificeren van de huidige manuele projectopstart. Via observatie en \textit{time-tracking} bij drie senior developers wordt de baseline voor \textit{development velocity} en de initiële \textit{Architectural Debt} vastgesteld.
-    \textit{Deliverable: Baseline-rapport met huidige tijdsbesteding en foutgevoeligheid.}
+\item \textbf{Fase 1: Contextanalyse en nulmeting (As-Is)} \\
+De doelstelling is het in kaart brengen en kwantificeren van de huidige, overwegend manuele projectopstart. Concreet worden:
+(1) bestaande projecten en demo's geanalyseerd op basis van beschikbare historische data (zoals urenregistraties, opleverdata of sprintplanning),
+en (2) gestructureerde tijdsinschattingen opgevraagd bij betrokken frontend developers over de tijdsbesteding per deeltaak van de projectopstart (zoals boilerplate-setup, configuratie van routing, aanmaken van tabellen en formulieren, en het corrigeren van inconsistenties). De combinatie van historische data en expertschattingen vormt een pragmatische nulmeting van de huidige \textit{development velocity} en de initiële architecturale schuld in de Ballistix-huisstijl.
+\textit{Deliverable: baseline-rapport met huidige tijdsbesteding per deeltaak en een beschrijving van typische fouten en inconsistenties.}
 
-    \item \textbf{Fase 2: Literatuurstudie en Requirements Definitie:} 
-    Op basis van de \textit{state-of-the-art} (Hoofdstuk~\ref{ch:stand-van-zaken}) worden de technische vereisten voor de PoC opgesteld. Hierbij wordt de \textit{Single Source of Truth} (de componentenbibliotheek) formeel gedocumenteerd voor MCP-ontsluiting.
-    \textit{Deliverable: Requirements-matrix en technisch ontwerp van de agentic workflow.}
+\item \textbf{Fase 2: Literatuurstudie en requirementsdefinitie} \\
+Op basis van de \textit{state-of-the-art} (Hoofdstuk~\ref{ch:stand-van-zaken}) worden de technische en methodologische vereisten voor de PoC opgesteld. De interne componentenbibliotheek en gerelateerde ontwerpafspraken worden hierbij expliciet gedocumenteerd als \textit{Single Source of Truth} voor context-voorziening, zodat beide workflow-benaderingen over dezelfde domeinkennis beschikken als de menselijke developers.
+\textit{Deliverable: requirements-matrix en technisch ontwerp van beide workflow-varianten (unrestricted en hybride MCP).}
 
-    \item \textbf{Fase 3: Ontwikkeling van de MCP-gebaseerde Workflow (PoC):} 
-    In deze fase wordt de experimentele opstelling gebouwd. Dit omvat de implementatie van een MCP-server en de configuratie van een \textit{Plan-Act-Reflect} (PAR) cyclus met een \textit{Explanation Gate}.
-    \textit{Deliverable: Functionele agentic workflow (zie Hoofdstuk~\ref{ch:poc}).}
+\item \textbf{Fase 3: Iteratieve ontwikkeling en vergelijking van workflow-benaderingen} \\
+In deze fase worden twee contrasterende benaderingen voor de projectopstart experimenteel uitgewerkt en vergeleken. Dit gebeurt in drie iteratieve stappen, waarin progressief meer structuur wordt geïntroduceerd.
 
-    \item \textbf{Fase 4: Experimentele Validatie met Double-Checks:} 
-    Uitvoering van de testmatrix (Sectie~\ref{sec:testmatrix}). Hierbij wordt specifiek de \textit{Look Back}-cyclus getest: kan de agent autonoom afwijkingen van het Design System detecteren en corrigeren? 
-    \textit{Deliverable: Dataset van gegenereerde projectstructuren en correctielogs.}
+\textbf{Iteratie 3.1 (Unrestricted baseline):} Eerst wordt een basisbenadering getested: een leeg project met markdown-bestanden (design tokens, componentdocumentatie) als context, aangeboden aan een LLM in Cursor Pro (via Composer 2 of Claude Opus 4.7). De agent redeneert vrij op basis van de gegeven context, zonder begeleiding via tools of templates. Deze aanpak volgt een standaard LLM-inzet zonder gestructureerde kontrole. De gegenereerde output wordt vastgelegd en geanalyseerd op hallucinatie, architecturale fit en tokenverbruik (via Cursor Pro's ingebouwde token-logger).~\autocite{modelcontextprotocol2026} Token-verbruik en tijd worden per run geregistreerd.
+\textit{Deliverable: gegenereerde projecten, logs van tokenverbruik en een analyse van hallucinaties/afwijkingen.}
 
-    \item \textbf{Fase 5: Resultatenanalyse en Evaluatie (To-Be):} 
-    De output van de PoC wordt vergeleken met de baseline uit fase 1. Gebruikmakend van metrieken zoals de \textit{Maintainability Index} en \textit{Technical Debt Ratio} wordt de effectiviteit van de workflow bepaald.
-    \textit{Deliverable: Vergelijkende analyse en finaal advies (zie Hoofdstuk~\ref{ch:evaluatie}).}
+\textbf{Iteratie 3.2 (MCP-only met prompts/resources):} Vervolgens wordt een TypeScript MCP-server (mcp-ts SDK~\autocite{modelcontextprotocol2026}) opgezet die de componentenbibliotheek ontsluit via resources (markdowns, schema's) en prompts. Geen hardcoded templates of code-genererende tools; de server biedt louter informatieuitwisseling. De agent in Cursor Pro formuleert aanvragen en ontvangt antwoorden via MCP-resources. Dit minimaliseert hallucinatie door structurele contextbegeleiding, maar vereist dat de agent zelf de code genereert. Tokenverbruik en output-kwaliteit worden opnieuw gemeten. Deze iteratie toont aan of louter informatierijke MCP volstaat of dat meer structuur nodig is.
+\textit{Deliverable: MCP-server met resources, gegenereerde projecten, tokenverbruik-logs en analyse van resterende hallucinatie.}
+
+\textbf{Iteratie 3.3 (Hybride MCP met tools, templates, en prompts):} Tot slot wordt een verdere verfijning gebouwd: dezelfde MCP-server wordt uitgebreid met \textit{tools} (bijv. \texttt{generateDetailView.ts}, \texttt{registerFillOverviewTablePrompt}) en template-fragmenten voor boilerplate-code. De agent kan nu niet alleen informatie opvragen, maar ook code-genererende functies aanroepen die vooraf gevalideerde, template-gebaseerde snippets retourneren. Daarnaast worden expliciete prompts/instructions opgenomen voor architecturale keuzes. Dit resulteert in een strikte, template-gedreven workflow met minimale hallucinatieruimte. Tokenverbruik, correctie-overhead en output-kwaliteit worden gemeten.
+\textit{Deliverable: functionele MCP-server met tools, templates en resources; gegenereerde projecten; volledige metrieken (tokens, tijd, kwaliteit).}
+
+Deze drie iteraties werden sequentieel uitgevoerd, elk met twee testruns per scenario (zie Sectie~\ref{sec:testmatrix}), zodat de impact van stijgende structuur op kwaliteit en kost inzichtelijk wordt. De gegenereerde projecten zijn bewust \textit{skimmed-down}-versies van volledige Ballistix-projecten (geen volledige backend-integratie, geen geavanceerde authenticatie), maar zij representeren voldoende complexiteit om de kernkeuzes in workflow-design te evalueren. Dit beperkt de omvang van het onderzoek zonder de validiteit van de bevindingen aan te tasten.
+
 \end{enumerate}
 
-\section{Onderzoeksmatrix en Scenario's}
+\section{Onderzoeksmatrix en scenario's}
 \label{sec:testmatrix}
 
-Om de robuustheid van de agentic workflow te testen, worden drie scenario's doorlopen. Elk scenario bootst een typische agency-briefing na om de variabele "context-gevoeligheid" te meten.
+Om de robuustheid van beide benaderingen te testen, worden drie scenario's gedefinieerd die typische agency-briefings representeren. Elk scenario heeft een andere vorm van input en een ander niveau van vooraf gespecificeerde context (\textit{Figma-export}, \textit{user story} of \textit{technische specificatie}), zodat de contextgevoeligheid van de verschillende aanpakken kan worden vergeleken.
 
 \begin{table}[h]
-  \small
-    \begin{tabularx}{\textwidth}{|l|X|X|X|}
-    \hline
-    \textbf{Briefing Type} & \textbf{Conditie A (Baseline)} & \textbf{Conditie B (Unrestricted)} & \textbf{Conditie C (Agentic+MCP)} \\ \hline
-    Figma Export & Manuele interpretatie & Lovable / v0.dev & PoC met Design Tokens \\ \hline
-    User Story & Manuele mappenstructuur & Standaard LLM prompt & PoC met Architectural Scaffolding \\ \hline
-    Tech Spec & Manuele Boilerplate setup & Cursor (zonder MCP) & PoC met Type-safe Validation \\ \hline
-    \end{tabularx}
-  \caption{Testmatrix voor de vergelijking van projectopstart-workflows.}
-  \label{tab:testmatrix}
+\small
+\begin{tabularx}{\textwidth}{|l|X|X|X|X|}
+\hline
+\textbf{Briefing type} & \textbf{Conditie A (Baseline)} & \textbf{Conditie B (Unrestricted)} & \textbf{Conditie C (MCP Resources)} & \textbf{Conditie D (MCP+Tools+Templates)} \\ \hline
+Figma export & Manuele interpretatie van Figma en handmatige opzet van layout, componenten en routing & Leeg project + markdowns, Cursor Pro met Composer/Opus, vrij redeneren & MCP-server met resources, geen tools & MCP-server met tools, templates, prompts \\ \hline
+User story & Manuele mappenstructuur, componentaanmaak en configuratie op basis van de user story & Leeg project + markdowns, generieke LLM-prompt, vrij redeneren & MCP-server met resources, geen tools & MCP-server met tools, templates, prompts \\ \hline
+Tech spec & Manuele boilerplate-setup en configuratie van datamodellen, tabellen en formulieren & Leeg project + markdowns, Cursor Pro met Composer/Opus, vrij redeneren & MCP-server met resources, geen tools & MCP-server met tools, templates, prompts \\ \hline
+\end{tabularx}
+\caption{Testmatrix voor de vergelijking van projectopstart-workflows.}
+\label{tab:testmatrix}
 \end{table}
 
-\section{Evaluatiekader: Kwantitatieve Metrieken}
+Hoewel de concrete invulling van Conditie A per scenario verschilt (manuele interpretatie, manuele mappenstructuur of manuele boilerplate-setup), wordt de vergelijkbaarheid van de baseline-meting gewaarborgd door een uniforme meetaanpak: voor elk scenario en elke conditie wordt dezelfde taakomschrijving als startpunt gebruikt, en wordt de tijdsmeting gestart en beëindigd op identieke momenten (respectievelijk bij het ontvangen van de briefing en bij het opleveren van een werkende, committable projectstructuur). Dit voorkomt dat scenario-specifieke variatie in de definitie van ``klaar'' de vergelijking beïnvloedt.
+
+Per scenario en conditie worden minstens twee testruns per conditie uitgevoerd door de onderzoeker, zodat de resultaten niet afhangen van één enkele generatie. Deze keuze voor een minimale steekproefgrootte is bewust pragmatisch: binnen het kader van een bachelorproef primeert diepte boven breedte, en de onderzoeksdoelstelling is in de eerste plaats descriptief en vergelijkend voor de casusorganisatie, niet generaliseerbaar naar de volledige sector. De bevindingen gelden bijgevolg primair als intern bewijs voor Ballistix Digital en niet als sector-brede claims.
+
+Daarnaast worden modelvergelijkingen uitgevoerd: voor Conditie B en C wordt elk scenario getest met minstens twee verschillende LLM-modellen (Composer 2~\autocite{Composer2026}, Claude Opus 4.7~\autocite{Opus2026}, en GPT-5.5~\autocite{GPT5_52026}), zodat de impact van model-keuze op tokenverbruik, hallucinatie en correctie-overhead kan worden bepaald.
+
+Daarnaast wordt aan minstens twee ervaren frontend developers gevraagd om, op basis van hun ervaring met gelijkaardige projecten, de benodigde tijd per scenario te schatten voor:
+(1) een volledig manuele opstart,
+(2) een opstart met unrestricted AI-ondersteuning,
+(3) een opstart met MCP-resources (zonder tools),
+en (4) een opstart met de volledige hybride MCP+tools+templates-workflow.
+
+Om het risico op confirmation bias te beperken --- de onderzoeker heeft zelf beide workflows ontwikkeld --- wordt voor ten minste één van de drie scenario's een collega-developer bij Ballistix Digital gevraagd om de gegenereerde outputs van alle vier condities blind te beoordelen, zonder te weten welke conditie welke output heeft geproduceerd. De resultaten van deze blinde beoordeling worden naast de eigen metingen geplaatst om de objectiviteit van de correction overhead-schatting te versterken. Deze expertschattingen worden vervolgens naast de gemeten metrieken geplaatst om de gepercipieerde en gemeten winst in kaart te brengen.
+
+\section{Evaluatiekader: kwantitatieve metrieken}
 \label{sec:kwaliteitsmeting}
 
-In tegenstelling tot subjectieve beoordelingen, wordt de kwaliteit in dit onderzoek geoperationaliseerd aan de hand van de volgende parameters:
+In tegenstelling tot louter subjectieve beoordelingen wordt de kwaliteit in dit onderzoek geoperationaliseerd aan de hand van de volgende parameters:
 
 \begin{itemize}
-    \item \textbf{Architectural Fit (TDR):} De \textit{Technical Debt Ratio}, berekend als de verhouding tussen de benodigde hersteltijd en de totale generatietijd.[2]
-    \item \textbf{Code Integriteit (MI):} De \textit{Maintainability Index}. Een score $> 20$ is vereist voor acceptatie zonder handmatige refactoring.[3]
-    \item \textbf{Correction Overhead:} De effectieve tijd in minuten die een developer spendeert aan de \textit{Explanation Gate} en het corrigeren van AI-hallucinaties.[4]
-    \item \textbf{Structural Complexity:} De \textit{Cyclomatic Complexity} van de gegenereerde hoofdcomponenten, met een streefwaarde $< 10$.[5]
+\item \textbf{Architectural Fit (TDR):} De \textit{Technical Debt Ratio}, berekend op basis van een statische code-analyse (bijvoorbeeld via SonarQube) als de verhouding tussen de benodigde hersteltijd en de totale ontwikkelkost van de gegenereerde code.~\autocite{SonarDocs2025} Een lagere TDR wijst op minder architecturale schuld en dus een betere aansluiting bij de gewenste kwaliteitsstandaarden.
+
+\item \textbf{Code-integriteit (MI):} De \textit{Maintainability Index} van de belangrijkste gegenereerde modules, berekend via dezelfde analysetool.~\autocite{Oman1992} Een score groter dan $20$ wordt beschouwd als voldoende onderhoudbaar om zonder onmiddellijke refactoring in gebruik te nemen.
+
+\item \textbf{Design system compliance (Architecturale fit):} Naast de generieke TDR wordt de specifieke conformiteit aan het interne design system beoordeeld via een projectspecifieke compliance checklist. Deze checklist omvat minstens drie criteria: (1) worden interne componentnamen correct gebruikt in plaats van eigen of open-source alternatieven? (2) worden de design tokens (kleuren, typografie, spacing) correct geïmporteerd vanuit de centrale tokenbron? (3) klopt de mappenstructuur met de door de agency gedefinieerde convenanties? De score wordt berekend als het percentage conforme items van het totaal aantal gecontroleerde items per testrun.
+
+\item \textbf{Correction overhead:} De correction overhead wordt in deze studie gedefinieerd als de (geschatte) effectieve tijd in minuten die een developer nodig heeft om de gegenereerde projectopstart (per scenario en conditie) aan te passen tot ze volledig conform is aan de interne architecturale richtlijnen en het design system.~\autocite{Augment2025} Voor de baseline wordt deze tijd benaderd op basis van historische data en expertschattingen; voor de AI-condities wordt ze aangevuld met de eigen metingen van de onderzoeker bij het corrigeren van de gegenereerde output.
+
+\item \textbf{Tokenverbruik en operationele kost:} Het totale tokenverbruik (input + output tokens) per gegenereerde projectopstart wordt geregistreerd via Cursor Pro's ingebouwde token-logger.~\autocite{CursorTokenTracking2025} De operationele kost per run wordt geschat op basis van het tarief van het gebruikte model (bijv. Composer 2, Opus 4.7, GPT-5.5). Dit metriek illustreert de financiële haalbaarheid van verschillende workflow-benaderingen en de impact van extra structuur (MCP-tools vs. -resources) op token-efficiëntie.
+
+\item \textbf{Structurele complexiteit:} De \textit{Cyclomatic Complexity} van de belangrijkste gegenereerde componenten en functies, met een streefwaarde kleiner dan $10$ per component.~\autocite{McCabe1976} Een hogere complexiteit wijst op moeilijker te begrijpen en te testen code en vergroot het risico op extra technische schuld.
 \end{itemize}
+
+Voor elke testrun worden deze metrieken berekend en geaggregeerd per scenario en conditie. De metrieken worden niet gelijkwaardig gewogen: \textit{correction overhead}, \textit{design system compliance} en \textit{tokenverbruik} zijn de primaire evaluatiecriteria, omdat ze rechtstreeks aansluiten bij de onderzoeksvraag (balans tussen snelheid, kwaliteit, kost in een agency-context). TDR, MI en CC fungeren als ondersteunende indicatoren die de architecturale kwaliteit onafhankelijk kwantificeren. Een conditie wordt als superieur beoordeeld als ze op de primaire criteria beter scoort én niet significant slechter presteert op de ondersteunende metrieken. In Hoofdstuk~\ref{ch:evaluatie} worden de resultaten van alle condities naast elkaar geplaatst om te beoordelen in welke mate progressief meer structuur (van unrestricted tot hybride MCP+tools+templates) bijdraagt tot snellere, goedkopere en kwalitatief betere projectopstart binnen de Ballistix-context.
+
+\section{Beperkingen en validiteit}
+\label{sec:beperkingen}
+
+De voorgestelde onderzoeksopzet kent enkele beperkingen die de interpretatie van de resultaten mee bepalen. 
+
+Ten eerste is de studie uitgevoerd binnen één specifieke organisatie (Ballistix Digital), wat de externe validiteit beperkt: de bevindingen zijn in de eerste plaats representatief voor agencies met een gelijkaardige architectuur en maturiteit. Ten tweede steunen de nulmeting en de schatting van correction overhead gedeeltelijk op historische data en expertschattingen in plaats van op grootschalige, gecontroleerde experimenten met meerdere developers. 
+
+Ten derde evolueert de gebruikte AI-tooling en prijsstelling snel: de gemeten resultaten vormen een momentopname van de stand van de technologie (mei 2026), en modelvergelijkingen zijn beperkt tot drie geslecteerde modellen. Verschillen in prestatie, prijs en beschikbaarheid kunnen snel veranderen.
+
+Ten vierde zijn de gegenereerde projecten in dit onderzoek \textit{skimmed-down}-versies van volledige Ballistix-projecten: volle backend-integratie, geavanceerde authenticatie en deployment-scripts zijn niet inbegrepen. Dit beperkt de omvang en voorkomt dat setup-kosten voor complexe infrastructuur het onderzoek vertroebelen, maar het betekent dat bevindingen in sommige opzichten niet direct naar volledige productieworkflows generaliseren.
+
+Ten vijfde is het risico op confirmation bias aanwezig, aangezien de onderzoeker de PoC zelf heeft ontwikkeld en de tests uitvoert. Dit wordt gemitigeerd door blinde beoordeling door collega's en gestructureerde, transparante meetprocedures.
+
+Deze beperkingen doen geen afbreuk aan de relevantie van de conclusies voor de casus, maar ze worden expliciet meegenomen in de reflectie op de generaliseerbaarheid in Hoofdstuk~\ref{ch:conclusie}.
