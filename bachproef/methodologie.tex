@@ -1,110 +1,94 @@
-%%=============================================================================
-%% Methodologie
-%%=============================================================================
-
 \chapter{\IfLanguageName{dutch}{Methodologie}{Methodology}}
 \label{ch:methodologie}
 
 In dit hoofdstuk worden de onderzoeksopzet en de gevolgde procedure toegelicht.
-Om te bepalen welke agentic workflow de meest kwalitatieve projectopstart oplevert binnen de context van Ballistix Digital, wordt gebruikgemaakt van een \textit{ontwerponderzoek} gekoppeld aan een \textit{vergelijkend experiment}.
-Deze aanpak laat toe om twee technologische benaderingen --- een meer \textit{unrestricted} AI-workflow en een meer \textit{hybride} MCP-gebaseerde workflow --- niet alleen te ontwikkelen, maar ook te toetsen aan de hand van kwantitatieve kwaliteitsmetrieken, tokenverbruik en de impact op de \textit{correction overhead} bij de projectopstart.
+Om te bepalen in welke mate promptformulering de kwaliteit en efficiëntie van AI-ondersteunde projectopstart beïnvloedt binnen een agency-context, wordt gebruikgemaakt van een \textit{ontwerponderzoek} gekoppeld aan een \textit{vergelijkend experiment}. Deze aanpak laat toe om één functionele, agentic MCP-gebaseerde workflow te ontwikkelen en vervolgens systematisch te evalueren onder verschillende promptcondities. De vergelijking richt zich niet op verschillende architecturen of toolingvarianten, maar op het effect van de prompt zelf: eenvoudige, beknopte prompts tegenover uitgebreidere, meer gespecificeerde prompts. De impact daarvan wordt gemeten aan de hand van doorlooptijd, tokenverbruik en de kwaliteit van de gegenereerde output.
 
 \section{Onderzoeksfasen}
 \label{sec:onderzoeksfasen}
 
-Het onderzoek is onderverdeeld in vijf opeenvolgende fasen. In lijn met de HOGENT-richtlijnen worden de resultaten van fase~3, 4 en 5 elk in een afzonderlijk hoofdstuk gedetailleerd uitgewerkt.
+Het onderzoek is onderverdeeld in vier opeenvolgende fasen. In lijn met de HOGENT-richtlijnen worden de resultaten van de ontwerp-, implementatie- en evaluatiefase verder uitgewerkt in afzonderlijke hoofdstukken.
 
 \begin{enumerate}
-\item \textbf{Fase 1: Contextanalyse en nulmeting (As-Is)} \\
-De doelstelling is het in kaart brengen en kwantificeren van de huidige, overwegend manuele projectopstart. Concreet worden:
-(1) bestaande projecten en demo's geanalyseerd op basis van beschikbare historische data (zoals urenregistraties, opleverdata of sprintplanning),
-en (2) gestructureerde tijdsinschattingen opgevraagd bij betrokken frontend developers over de tijdsbesteding per deeltaak van de projectopstart (zoals boilerplate-setup, configuratie van routing, aanmaken van tabellen en formulieren, en het corrigeren van inconsistenties). De combinatie van historische data en expertschattingen vormt een pragmatische nulmeting van de huidige \textit{development velocity} en de initiële architecturale schuld in de Ballistix-huisstijl.
-\textit{Deliverable: baseline-rapport met huidige tijdsbesteding per deeltaak en een beschrijving van typische fouten en inconsistenties.}
+\item \textbf{Fase 1: Contextanalyse en afbakening van de use case} \\
+In de eerste fase wordt de probleemcontext afgebakend. Daarbij wordt onderzocht welke delen van de initiële projectopstart van frontend-applicaties binnen een agency-context repetitief genoeg zijn om in aanmerking te komen voor AI-ondersteuning. De focus ligt hierbij niet op het volledige ontwikkelproces, maar op de eerste opstartfase van een nieuw project: het genereren van een basisstructuur, routing, generieke pagina-opbouw en de eerste integratie van herbruikbare componenten. Daarnaast wordt de experimentele scope bewust beperkt tot één agentic workflow, zodat de variatie in resultaten zoveel mogelijk aan het promptverschil kan worden toegeschreven.
+\textit{Deliverable: een afgebakende onderzoekscontext en een duidelijke omschrijving van de projectopstarttaken die binnen de PoC worden onderzocht.}
 
 \item \textbf{Fase 2: Literatuurstudie en requirementsdefinitie} \\
-Op basis van de \textit{state-of-the-art} (Hoofdstuk~\ref{ch:stand-van-zaken}) worden de technische en methodologische vereisten voor de PoC opgesteld. De interne componentenbibliotheek en gerelateerde ontwerpafspraken worden hierbij expliciet gedocumenteerd als \textit{Single Source of Truth} voor context-voorziening, zodat beide workflow-benaderingen over dezelfde domeinkennis beschikken als de menselijke developers.
-\textit{Deliverable: requirements-matrix en technisch ontwerp van beide workflow-varianten (unrestricted en hybride MCP).}
+Op basis van de \textit{state-of-the-art} (Hoofdstuk~\ref{ch:stand-van-zaken}) worden de technische en methodologische vereisten voor de Proof-of-Concept (PoC) opgesteld. De literatuur rond agentic workflows, prompt engineering, contextinjectie en het Model Context Protocol vormt hierbij de theoretische basis. Daarnaast worden de relevante interne conventies --- zoals componentgebruik, architecturale afspraken en contextuele documentatie --- in kaart gebracht als noodzakelijke kennisbasis voor de MCP-server. In deze fase wordt ook bepaald welke elementen door de prompts beïnvloed kunnen worden en welke constant moeten blijven om een eerlijke vergelijking mogelijk te maken.
+\textit{Deliverable: een requirementsmatrix en technisch ontwerp voor één MCP-gebaseerde workflow met vaste context en variabele promptcondities.}
 
-\item \textbf{Fase 3: Iteratieve ontwikkeling en vergelijking van workflow-benaderingen} \\
-In deze fase worden twee contrasterende benaderingen voor de projectopstart experimenteel uitgewerkt en vergeleken. Dit gebeurt in drie iteratieve stappen, waarin progressief meer structuur wordt geïntroduceerd.
+\item \textbf{Fase 3: Ontwikkeling van de MCP-gebaseerde PoC} \\
+In deze fase wordt één functionele agentic workflow opgebouwd rond een MCP-server. Deze server stelt de nodige context ter beschikking aan het gebruikte LLM via resources, prompts en eventueel ondersteunende tools. Het doel van deze PoC is niet om verschillende technische implementaties te vergelijken, maar om een stabiele experimentele omgeving te creëren waarin het effect van promptvariatie onderzocht kan worden. Daarom blijft de onderliggende infrastructuur over alle tests identiek. Enkel de promptinhoud verschilt tussen de verschillende runs.
 
-\textbf{Iteratie 3.1 (Unrestricted baseline):} Eerst wordt een basisbenadering getested: een leeg project met markdown-bestanden (design tokens, componentdocumentatie) als context, aangeboden aan een LLM in Cursor Pro (via Composer 2 of Claude Opus 4.7). De agent redeneert vrij op basis van de gegeven context, zonder begeleiding via tools of templates. Deze aanpak volgt een standaard LLM-inzet zonder gestructureerde kontrole. De gegenereerde output wordt vastgelegd en geanalyseerd op hallucinatie, architecturale fit en tokenverbruik (via Cursor Pro's ingebouwde token-logger).~\autocite{modelcontextprotocol2026} Token-verbruik en tijd worden per run geregistreerd.
-\textit{Deliverable: gegenereerde projecten, logs van tokenverbruik en een analyse van hallucinaties/afwijkingen.}
+Concreet worden twee prompttypes gedefinieerd:
+\begin{itemize}
+    \item \textbf{Eenvoudige prompt:} een korte, beperkte instructie waarin enkel de kern van de opdracht wordt meegegeven.
+    \item \textbf{Uitgebreide prompt:} een meer gedetailleerde instructie waarin bijkomende context, verwachtingen, structuur of richtlijnen expliciet worden opgenomen.
+\end{itemize}
 
-\textbf{Iteratie 3.2 (MCP-only met prompts/resources):} Vervolgens wordt een TypeScript MCP-server (mcp-ts SDK~\autocite{modelcontextprotocol2026}) opgezet die de componentenbibliotheek ontsluit via resources (markdowns, schema's) en prompts. Geen hardcoded templates of code-genererende tools; de server biedt louter informatieuitwisseling. De agent in Cursor Pro formuleert aanvragen en ontvangt antwoorden via MCP-resources. Dit minimaliseert hallucinatie door structurele contextbegeleiding, maar vereist dat de agent zelf de code genereert. Tokenverbruik en output-kwaliteit worden opnieuw gemeten. Deze iteratie toont aan of louter informatierijke MCP volstaat of dat meer structuur nodig is.
-\textit{Deliverable: MCP-server met resources, gegenereerde projecten, tokenverbruik-logs en analyse van resterende hallucinatie.}
+De prompts worden toegepast op meerdere scenario's met oplopende omvang en complexiteit. De MCP-server, de gebruikte hostomgeving en de beschikbare context blijven constant, zodat de vergelijking zich effectief toespitst op de promptformulering.
+\textit{Deliverable: een werkende MCP-server en een set experimentele promptvarianten die in een gecontroleerde testopstelling kunnen worden uitgevoerd.}
 
-\textbf{Iteratie 3.3 (Hybride MCP met tools, templates, en prompts):} Tot slot wordt een verdere verfijning gebouwd: dezelfde MCP-server wordt uitgebreid met \textit{tools} (bijv. \texttt{generateDetailView.ts}, \texttt{registerFillOverviewTablePrompt}) en template-fragmenten voor boilerplate-code. De agent kan nu niet alleen informatie opvragen, maar ook code-genererende functies aanroepen die vooraf gevalideerde, template-gebaseerde snippets retourneren. Daarnaast worden expliciete prompts/instructions opgenomen voor architecturale keuzes. Dit resulteert in een strikte, template-gedreven workflow met minimale hallucinatieruimte. Tokenverbruik, correctie-overhead en output-kwaliteit worden gemeten.
-\textit{Deliverable: functionele MCP-server met tools, templates en resources; gegenereerde projecten; volledige metrieken (tokens, tijd, kwaliteit).}
-
-Deze drie iteraties werden sequentieel uitgevoerd, elk met twee testruns per scenario (zie Sectie~\ref{sec:testmatrix}), zodat de impact van stijgende structuur op kwaliteit en kost inzichtelijk wordt. De gegenereerde projecten zijn bewust \textit{skimmed-down}-versies van volledige Ballistix-projecten (geen volledige backend-integratie, geen geavanceerde authenticatie), maar zij representeren voldoende complexiteit om de kernkeuzes in workflow-design te evalueren. Dit beperkt de omvang van het onderzoek zonder de validiteit van de bevindingen aan te tasten.
-
+\item \textbf{Fase 4: Experimentele evaluatie} \\
+In de laatste fase worden de promptvarianten getest op een reeks representatieve scenario's voor frontend-projectopstart. Per scenario worden meerdere runs uitgevoerd, zodat niet één enkele generatie bepalend is voor de conclusie. Voor elke run worden dezelfde meetwaarden geregistreerd: duur van de run, aantal planning tokens, aantal execution tokens, en een beoordeling van de kwaliteit van de gegenereerde output. Op basis van deze resultaten wordt geanalyseerd in welke mate uitgebreidere prompts leiden tot betere kwaliteit, en welke kost daar tegenover staat in termen van tijd en tokenverbruik.
+\textit{Deliverable: een experimentele resultatentabel en een analyse van de relatie tussen promptdetail, kwaliteit, doorlooptijd en kost.}
 \end{enumerate}
 
 \section{Onderzoeksmatrix en scenario's}
 \label{sec:testmatrix}
 
-Om de robuustheid van beide benaderingen te testen, worden drie scenario's gedefinieerd die typische agency-briefings representeren. Elk scenario heeft een andere vorm van input en een ander niveau van vooraf gespecificeerde context (\textit{Figma-export}, \textit{user story} of \textit{technische specificatie}), zodat de contextgevoeligheid van de verschillende aanpakken kan worden vergeleken.
+Om de invloed van promptdetail op de projectopstart systematisch te onderzoeken, worden meerdere tests uitgevoerd binnen één en dezelfde MCP-gebaseerde workflow. De onafhankelijke variabele in dit experiment is de promptvorm. Daarbij worden twee condities onderscheiden: een eenvoudige prompt en een uitgebreide prompt. De overige elementen van de testomgeving blijven constant, zodat verschillen in output zo veel mogelijk aan het promptverschil kunnen worden toegeschreven.
+
+De experimenten worden uitgevoerd op drie scenariofamilies, die elk een ander type frontend-opstart representeren:
+\begin{itemize}
+    \item \textbf{Bee}: een relatief klein scenario met beperkte functionele omvang.
+    \item \textbf{Review}: een scenario met gemiddelde complexiteit en een duidelijkere functionele structuur.
+    \item \textbf{Inventory}: een uitgebreider scenario met meer schermlogica en hogere contextbehoefte.
+\end{itemize}
+
+Binnen elk scenario worden meerdere runs uitgevoerd met beide prompttypes. De praktijktabel met resultaten vormt de empirische basis voor de evaluatie. Op basis van de beschikbare testdata werden onder meer de volgende runs geregistreerd: \texttt{bee-1} tot \texttt{bee-3}, \texttt{review-1} tot \texttt{review-3}, en \texttt{inventory-1} tot \texttt{inventory-3}. Elke run werd gelogd met een duurtijd, planning tokens, execution tokens, prompttype en resultaatlabel.
 
 \begin{table}[h]
 \small
-\begin{tabularx}{\textwidth}{|l|X|X|X|X|}
+\begin{tabularx}{\textwidth}{|l|X|X|X|}
 \hline
-\textbf{Briefing type} & \textbf{Conditie A (Baseline)} & \textbf{Conditie B (Unrestricted)} & \textbf{Conditie C (MCP Resources)} & \textbf{Conditie D (MCP+Tools+Templates)} \\ \hline
-Figma export & Manuele interpretatie van Figma en handmatige opzet van layout, componenten en routing & Leeg project + markdowns, Cursor Pro met Composer/Opus, vrij redeneren & MCP-server met resources, geen tools & MCP-server met tools, templates, prompts \\ \hline
-User story & Manuele mappenstructuur, componentaanmaak en configuratie op basis van de user story & Leeg project + markdowns, generieke LLM-prompt, vrij redeneren & MCP-server met resources, geen tools & MCP-server met tools, templates, prompts \\ \hline
-Tech spec & Manuele boilerplate-setup en configuratie van datamodellen, tabellen en formulieren & Leeg project + markdowns, Cursor Pro met Composer/Opus, vrij redeneren & MCP-server met resources, geen tools & MCP-server met tools, templates, prompts \\ \hline
+\textbf{Scenario} & \textbf{Omvang} & \textbf{Conditie A} & \textbf{Conditie B} \\ \hline
+Bee & Klein & Agentic MCP met eenvoudige prompt & Agentic MCP met uitgebreide prompt \\ \hline
+Review & Klein tot middelgroot & Agentic MCP met eenvoudige prompt & Agentic MCP met uitgebreide prompt \\ \hline
+Inventory & Middelgroot & Agentic MCP met eenvoudige prompt & Agentic MCP met uitgebreide prompt \\ \hline
 \end{tabularx}
-\caption{Testmatrix voor de vergelijking van projectopstart-workflows.}
+\caption{Testmatrix voor de vergelijking van promptcondities binnen één MCP-gebaseerde workflow.}
 \label{tab:testmatrix}
 \end{table}
 
-Hoewel de concrete invulling van Conditie A per scenario verschilt (manuele interpretatie, manuele mappenstructuur of manuele boilerplate-setup), wordt de vergelijkbaarheid van de baseline-meting gewaarborgd door een uniforme meetaanpak: voor elk scenario en elke conditie wordt dezelfde taakomschrijving als startpunt gebruikt, en wordt de tijdsmeting gestart en beëindigd op identieke momenten (respectievelijk bij het ontvangen van de briefing en bij het opleveren van een werkende, committable projectstructuur). Dit voorkomt dat scenario-specifieke variatie in de definitie van ``klaar'' de vergelijking beïnvloedt.
+De scenario's verschillen in inhoud en complexiteit, maar worden telkens met dezelfde onderliggende technische setup uitgevoerd. Daardoor ontstaat een vergelijkingskader waarin de rol van de prompt expliciet kan worden onderzocht. Deze onderzoeksopzet is bewust pragmatisch: het doel is niet om statistisch generaliseerbare uitspraken te doen over alle mogelijke promptvormen, maar om binnen de gekozen agency-context inzicht te krijgen in welke promptstrategie het meest bruikbaar is voor projectopstart.
 
-Per scenario en conditie worden minstens twee testruns per conditie uitgevoerd door de onderzoeker, zodat de resultaten niet afhangen van één enkele generatie. Deze keuze voor een minimale steekproefgrootte is bewust pragmatisch: binnen het kader van een bachelorproef primeert diepte boven breedte, en de onderzoeksdoelstelling is in de eerste plaats descriptief en vergelijkend voor de casusorganisatie, niet generaliseerbaar naar de volledige sector. De bevindingen gelden bijgevolg primair als intern bewijs voor Ballistix Digital en niet als sector-brede claims.
-
-Daarnaast worden modelvergelijkingen uitgevoerd: voor Conditie B en C wordt elk scenario getest met minstens twee verschillende LLM-modellen (Composer 2~\autocite{Composer2026}, Claude Opus 4.7~\autocite{Opus2026}, en GPT-5.5~\autocite{GPT5_52026}), zodat de impact van model-keuze op tokenverbruik, hallucinatie en correctie-overhead kan worden bepaald.
-
-Daarnaast wordt aan minstens twee ervaren frontend developers gevraagd om, op basis van hun ervaring met gelijkaardige projecten, de benodigde tijd per scenario te schatten voor:
-(1) een volledig manuele opstart,
-(2) een opstart met unrestricted AI-ondersteuning,
-(3) een opstart met MCP-resources (zonder tools),
-en (4) een opstart met de volledige hybride MCP+tools+templates-workflow.
-
-Om het risico op confirmation bias te beperken --- de onderzoeker heeft zelf beide workflows ontwikkeld --- wordt voor ten minste één van de drie scenario's een collega-developer bij Ballistix Digital gevraagd om de gegenereerde outputs van alle vier condities blind te beoordelen, zonder te weten welke conditie welke output heeft geproduceerd. De resultaten van deze blinde beoordeling worden naast de eigen metingen geplaatst om de objectiviteit van de correction overhead-schatting te versterken. Deze expertschattingen worden vervolgens naast de gemeten metrieken geplaatst om de gepercipieerde en gemeten winst in kaart te brengen.
-
-\section{Evaluatiekader: kwantitatieve metrieken}
+\section{Evaluatiekader: kwantitatieve en kwalitatieve metrieken}
 \label{sec:kwaliteitsmeting}
 
-In tegenstelling tot louter subjectieve beoordelingen wordt de kwaliteit in dit onderzoek geoperationaliseerd aan de hand van de volgende parameters:
+De evaluatie van de verschillende promptcondities gebeurt aan de hand van een beperkt maar doelgericht metriekenkader. Omdat het onderzoek zich toespitst op één workflow en de invloed van promptdetail, zijn niet alle klassieke softwarekwaliteitsindicatoren even relevant of praktisch meetbaar binnen de beschikbare experimentele scope. De nadruk ligt daarom op metrieken die rechtstreeks aansluiten bij de onderzoeksvraag.
 
 \begin{itemize}
-\item \textbf{Architectural Fit (TDR):} De \textit{Technical Debt Ratio}, berekend op basis van een statische code-analyse (bijvoorbeeld via SonarQube) als de verhouding tussen de benodigde hersteltijd en de totale ontwikkelkost van de gegenereerde code.~\autocite{SonarDocs2025} Een lagere TDR wijst op minder architecturale schuld en dus een betere aansluiting bij de gewenste kwaliteitsstandaarden.
+\item \textbf{Doorlooptijd:} De totale duur van een run, uitgedrukt in minuten. Deze metriek geeft aan hoeveel tijd de agent nodig heeft om van prompt tot gegenereerde output te komen.
 
-\item \textbf{Code-integriteit (MI):} De \textit{Maintainability Index} van de belangrijkste gegenereerde modules, berekend via dezelfde analysetool.~\autocite{Oman1992} Een score groter dan $20$ wordt beschouwd als voldoende onderhoudbaar om zonder onmiddellijke refactoring in gebruik te nemen.
+\item \textbf{Planning tokens:} Het aantal tokens dat gebruikt wordt in de plannings- of redeneerfase van de agent. Deze waarde biedt inzicht in de mate waarin de agent context moet verwerken en structureren vooraleer hij tot uitvoering overgaat.
 
-\item \textbf{Design system compliance (Architecturale fit):} Naast de generieke TDR wordt de specifieke conformiteit aan het interne design system beoordeeld via een projectspecifieke compliance checklist. Deze checklist omvat minstens drie criteria: (1) worden interne componentnamen correct gebruikt in plaats van eigen of open-source alternatieven? (2) worden de design tokens (kleuren, typografie, spacing) correct geïmporteerd vanuit de centrale tokenbron? (3) klopt de mappenstructuur met de door de agency gedefinieerde convenanties? De score wordt berekend als het percentage conforme items van het totaal aantal gecontroleerde items per testrun.
+\item \textbf{Execution tokens:} Het aantal tokens dat wordt verbruikt tijdens de effectieve uitvoeringsfase van de generatie. Samen met de planning tokens geeft dit een indicatie van de operationele kost van een run.
 
-\item \textbf{Correction overhead:} De correction overhead wordt in deze studie gedefinieerd als de (geschatte) effectieve tijd in minuten die een developer nodig heeft om de gegenereerde projectopstart (per scenario en conditie) aan te passen tot ze volledig conform is aan de interne architecturale richtlijnen en het design system.~\autocite{Augment2025} Voor de baseline wordt deze tijd benaderd op basis van historische data en expertschattingen; voor de AI-condities wordt ze aangevuld met de eigen metingen van de onderzoeker bij het corrigeren van de gegenereerde output.
+\item \textbf{Kwaliteit van de output:} De output van elke test wordt beoordeeld aan de hand van een praktische kwaliteitsinschatting met labels zoals \textit{code slecht}, \textit{code gemiddeld}, \textit{code goed} of \textit{no result}. Deze beoordeling is geen formele statische code-analyse, maar een functionele evaluatie van de bruikbaarheid van de gegenereerde projectopstart in relatie tot de beoogde agency-context.
 
-\item \textbf{Tokenverbruik en operationele kost:} Het totale tokenverbruik (input + output tokens) per gegenereerde projectopstart wordt geregistreerd via Cursor Pro's ingebouwde token-logger.~\autocite{CursorTokenTracking2025} De operationele kost per run wordt geschat op basis van het tarief van het gebruikte model (bijv. Composer 2, Opus 4.7, GPT-5.5). Dit metriek illustreert de financiële haalbaarheid van verschillende workflow-benaderingen en de impact van extra structuur (MCP-tools vs. -resources) op token-efficiëntie.
-
-\item \textbf{Structurele complexiteit:} De \textit{Cyclomatic Complexity} van de belangrijkste gegenereerde componenten en functies, met een streefwaarde kleiner dan $10$ per component.~\autocite{McCabe1976} Een hogere complexiteit wijst op moeilijker te begrijpen en te testen code en vergroot het risico op extra technische schuld.
+\item \textbf{Balans tussen kwaliteit, tijd en kost:} De centrale evaluatie gebeurt niet op basis van één enkele score, maar op basis van de verhouding tussen drie factoren: de kwaliteit van de output, de duur van de run, en het tokenverbruik. Een promptconditie wordt als gunstiger beschouwd wanneer zij kwalitatief betere output genereert zonder disproportionele stijging in tijd of kost.
 \end{itemize}
 
-Voor elke testrun worden deze metrieken berekend en geaggregeerd per scenario en conditie. De metrieken worden niet gelijkwaardig gewogen: \textit{correction overhead}, \textit{design system compliance} en \textit{tokenverbruik} zijn de primaire evaluatiecriteria, omdat ze rechtstreeks aansluiten bij de onderzoeksvraag (balans tussen snelheid, kwaliteit, kost in een agency-context). TDR, MI en CC fungeren als ondersteunende indicatoren die de architecturale kwaliteit onafhankelijk kwantificeren. Een conditie wordt als superieur beoordeeld als ze op de primaire criteria beter scoort én niet significant slechter presteert op de ondersteunende metrieken. In Hoofdstuk~\ref{ch:evaluatie} worden de resultaten van alle condities naast elkaar geplaatst om te beoordelen in welke mate progressief meer structuur (van unrestricted tot hybride MCP+tools+templates) bijdraagt tot snellere, goedkopere en kwalitatief betere projectopstart binnen de Ballistix-context.
+Dit metriekenkader sluit rechtstreeks aan bij de centrale onderzoeksvraag, namelijk in welke mate promptdetail de efficiëntie en bruikbaarheid van AI-gegenereerde projectopstart beïnvloedt. In tegenstelling tot een klassieke vergelijking tussen verschillende tools of architecturen, staat hier de kwaliteit van de instructie centraal als experimentele hefboom.
 
-\section{Beperkingen en validiteit}
-\label{sec:beperkingen}
 
-De voorgestelde onderzoeksopzet kent enkele beperkingen die de interpretatie van de resultaten mee bepalen. 
+\section{Dataverzameling en analyse}
+\label{sec:data-analyse}
 
-Ten eerste is de studie uitgevoerd binnen één specifieke organisatie (Ballistix Digital), wat de externe validiteit beperkt: de bevindingen zijn in de eerste plaats representatief voor agencies met een gelijkaardige architectuur en maturiteit. Ten tweede steunen de nulmeting en de schatting van correction overhead gedeeltelijk op historische data en expertschattingen in plaats van op grootschalige, gecontroleerde experimenten met meerdere developers. 
+De dataverzameling gebeurt via screen-recordings van alle MCP-server runs in Cursor Pro/Claude. Elke testrun wordt volledig gefilmd, inclusief de volledige agent-interaalle MCP-server execution en gegenereerde output. Na afloop worden de recordings systematisch gereviewed om de duur (van prompt tot finale output) te meten en de kwaliteitslabel toe te kennen (no result, code slecht/gemiddeld/goed).
 
-Ten derde evolueert de gebruikte AI-tooling en prijsstelling snel: de gemeten resultaten vormen een momentopname van de stand van de technologie (mei 2026), en modelvergelijkingen zijn beperkt tot drie geslecteerde modellen. Verschillen in prestatie, prijs en beschikbaarheid kunnen snel veranderen.
+Daarnaast wordt de gegenereerde code handmatig geïnspecteerd op architecturale fit (design system compliance, componentgebruik) en functionele correctheid. De gegenereerde applicaties worden lokaal opgestart en getest op balle MCP-server eit (routing, formulieren, tabellen). Alle metrieken --- duur, planning/execution tokens (via tool-logs), Type en Result --- worden in een centrale CSV-tabel vastgelegd (16 runs: bee/review/inventory x simple/uitgebreide).[file:23]
 
-Ten vierde zijn de gegenereerde projecten in dit onderzoek \textit{skimmed-down}-versies van volledige Ballistix-projecten: volle backend-integratie, geavanceerde authenticatie en deployment-scripts zijn niet inbegrepen. Dit beperkt de omvang en voorkomt dat setup-kosten voor complexe infrastructuur het onderzoek vertroebelen, maar het betekent dat bevindingen in sommige opzichten niet direct naar volledige productieworkflows generaliseren.
-
-Ten vijfde is het risico op confirmation bias aanwezig, aangezien de onderzoeker de PoC zelf heeft ontwikkeld en de tests uitvoert. Dit wordt gemitigeerd door blinde beoordeling door collega's en gestructureerde, transparante meetprocedures.
-
-Deze beperkingen doen geen afbreuk aan de relevantie van de conclusies voor de casus, maar ze worden expliciet meegenomen in de reflectie op de generaliseerbaarheid in Hoofdstuk~\ref{ch:conclusie}.
+De analyse is descriptief: groepering per prompttype/scenario, gemiddelden voor duur/tokens, en patronen in kwaliteit (bijv. goed vs. slecht). Resultaten in Hoofdstuk~\ref{ch:evaluatie}.[file:23]

@@ -2,9 +2,349 @@
 %% PoC: unrestricted / agentic workflow
 %%=============================================================================
 
-\chapter{\IfLanguageName{dutch}{Agentic workflow (unrestricted)}{Agentic workflow (unrestricted)}}%
+\chapter{\IfLanguageName{dutch}{Proof-of-Concept: Agentic workflow met markdown-context}{Proof-of-Concept: Agentic Workflow with Markdown Context}}%
 \label{ch:poc_agentic}
 
-% TODO: Beschrijf de agentic aanpak (markdown-context, Cursor, tokenlogging, enz.).
+\section{\IfLanguageName{dutch}{Inleiding}{Introduction}}
+\label{sec:poc-agentic-inleiding}
 
-\lipsum[62]
+Dit hoofdstuk beschrijft de agentic variant van de Proof-of-Concept. Waar de hybride workflow uit Hoofdstuk~\ref{ch:poc_hybrid} sterk inzet op gespecialiseerde MCP-tools voor codegeneratie, vertrekt deze variant vanuit een andere hypothese: een LLM-agent kan een Ballistix-project opbouwen wanneer die voldoende prescriptieve markdown-documentatie krijgt en binnen een duidelijk afgebakend template-project werkt.
+
+De implementatie is gebaseerd op \texttt{src/agentic-server.ts} uit \texttt{ballistix-mcp}. Deze server laat het grootste deel van de klassieke codegenererende tools weg. Er blijft slechts één imperatieve tool over, \texttt{create-ballistix-project}, die het vaste Ballistix-template kopieert en initialiseert. De inhoudelijke sturing gebeurt daarna via MCP-resources met markdown-documentatie en via één MCP-prompt, \texttt{generate-feature-from-documentation}. De agent schrijft dus zelf code in het gekopieerde template, maar zijn beslissingsruimte wordt beperkt door de documentatiebronnen en door expliciete regels over welke bestanden hij mag raadplegen.
+
+Deze aanpak is minder deterministisch dan de hybride workflow, omdat er geen tool-template bestaat die bijvoorbeeld automatisch een overview-pagina of detailpagina genereert. Tegelijk is de workflow flexibeler: nieuwe componenten, conventies of projectregels kunnen worden toegevoegd als markdown zonder dat telkens nieuwe tools moeten worden geschreven. Deze PoC onderzoekt daarom in welke mate een documentatiegedreven agentic workflow bruikbaar is als lichter, onderhoudbaarder alternatief voor een uitgebreide toolset.
+
+\section{\IfLanguageName{dutch}{Architectuuroverzicht}{Architecture Overview}}
+\label{sec:poc-agentic-architectuur}
+
+\subsection{Systeemarchitectuur}
+
+De agentic MCP-server bestaat uit vier onderdelen: (1) een minimale TypeScript MCP-server, (2) een template-kopieertool, (3) drie verzamelingen markdown-resources, en (4) een MCP-prompt die de agent stap voor stap instrueert om eerst documentatie te lezen en daarna alleen binnen de projectmap te werken.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[
+    box/.style={rectangle, draw=black, thick, minimum width=3cm, minimum height=0.8cm, text centered},
+    arrow/.style={->, thick, >=stealth},
+    small_box/.style={rectangle, draw=black, thin, minimum width=2.8cm, minimum height=0.6cm, font=\small, text centered}
+  ]
+
+    \node[box, fill=cyan!20] (cursor) at (4, 9) {Cursor Agent};
+    \node[font=\footnotesize, above=0.2 of cursor] {LLM + filesystem tools};
+
+    \draw[arrow] (cursor) -- (4, 7.7);
+    \node[font=\footnotesize, right=0.3 of cursor.south] {MCP protocol};
+
+    \node[box, fill=orange!20] (mcp) at (4, 6.8) {agentic-server.ts};
+    \node[font=\footnotesize, below=0.1 of mcp] {\texttt{ballistix-mcp-research}};
+
+    \draw[arrow] (mcp) -- (1.2, 5);
+    \draw[arrow] (mcp) -- (4, 5);
+    \draw[arrow] (mcp) -- (6.8, 5);
+
+    \node[box, fill=green!20] (tool) at (1.2, 4.4) {Tool};
+    \node[small_box] at (1.2, 3.5) {create-ballistix-project};
+
+    \node[box, fill=blue!20] (resources) at (4, 4.4) {Resources};
+    \node[small_box] at (4, 3.6) {specs/*.md};
+    \node[small_box] at (4, 2.9) {conventions/*.md};
+    \node[small_box] at (4, 2.2) {components/*.md};
+
+    \node[box, fill=yellow!20] (prompt) at (6.8, 4.4) {Prompt};
+    \node[small_box] at (6.8, 3.5) {generate-feature-from-documentation};
+
+    \draw[arrow] (tool) -- (4, 0.8);
+    \draw[arrow] (resources) -- (4, 0.8);
+    \draw[arrow] (prompt) -- (4, 0.8);
+
+    \node[box, fill=purple!20] (output) at (4, -0.2) {Gekopieerd Ballistix-project};
+    \node[font=\footnotesize, below=0.1 of output] {agent implementeert features in template};
+
+  \end{tikzpicture}
+  \caption{Agentic MCP-architectuur: minimale toolset, maximale markdown-context.}
+  \label{fig:poc-agentic-architectuur}
+\end{figure}
+
+\subsection{Verschil met de hybride workflow}
+
+De hybride server registreert meerdere tools die concrete bestanden genereren: overview-pagina's, detailviews, dropdownmenu's en commit-acties. De agentic server kiest bewust voor een kleinere surface:
+
+\begin{table}[htbp]
+  \centering
+  \caption{Vergelijking tussen hybride en agentic MCP-workflow}
+  \label{tab:poc-agentic-vs-hybrid}
+  \small
+  \begin{tabularx}{\textwidth}{|l|X|X|}
+    \hline
+    \textbf{Aspect} & \textbf{Hybride workflow} & \textbf{Agentic workflow} \\
+    \hline
+    Codegeneratie &
+    Via gespecialiseerde MCP-tools en ingebouwde templates. &
+    Door de LLM-agent zelf, op basis van markdown en bestaande template-code. \\
+    \hline
+    Tools &
+    Meerdere tools: overview, detail, dropdown, commit, enz. &
+    Eén bootstrap-tool: \texttt{create-ballistix-project}. \\
+    \hline
+    Kennislaag &
+    Resources ondersteunen tools en prompts. &
+    Resources zijn de primaire bron van waarheid. \\
+    \hline
+    Determinisme &
+    Hoog: tool-templates bepalen veel output. &
+    Lager: agent interpreteert documentatie en schrijft zelf code. \\
+    \hline
+    Onderhoud &
+    Nieuwe patronen vragen vaak nieuwe of gewijzigde tools. &
+    Nieuwe patronen kunnen hoofdzakelijk als markdown toegevoegd worden. \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\section{\IfLanguageName{dutch}{Serverimplementatie}{Server Implementation}}
+\label{sec:poc-agentic-server}
+
+\subsection{Entrypoint: agentic-server.ts}
+
+De volledige serverinitialisatie is bewust klein. De server registreert eerst alle prompt-documentatie-resources, daarna de template-kopieertool, en tot slot de prompt die de agent door de implementatie leidt.
+
+\begin{minted}[fontsize=\footnotesize, linenos]{typescript}
+#!/usr/bin/env node
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { registerGenerateFeatureFromDocsPrompt } from "./prompts/registerGenerateFeatureFromDocsPrompt.js";
+import { registerPromptDocumentationResources } from "./resources/registerPromptDocumentationResources.js";
+import { registerCreateBallistixProjectTool } from "./tools/createBallistixProject.js";
+
+const server = new McpServer({
+  name: "ballistix-mcp-research",
+  version: "0.1.0",
+});
+
+await registerPromptDocumentationResources(server);
+registerCreateBallistixProjectTool(server);
+registerGenerateFeatureFromDocsPrompt(server);
+
+const transport = new StdioServerTransport();
+
+await server.connect(transport);
+\end{minted}
+
+\noindent
+Deze code toont de kernkeuze van de agentic PoC: de server bevat geen aparte tool voor elke Ballistix-feature. De generieke MCP-server geeft de agent toegang tot kennis, niet tot een uitgebreide set codegeneratoren. Hierdoor verschuift de complexiteit van meerdere TypeScript-tools naar onderhoudbare markdown-documentatie.
+
+\subsection{Minimale toolset}
+
+De enige imperatieve tool is \texttt{create-ballistix-project}. Deze tool:
+
+\begin{itemize}
+  \item kopieert het vaste Ballistix-template naar \texttt{<process.cwd>/<projectName>};
+  \item valideert dat \texttt{projectName} lowercase kebab-case is;
+  \item past willekeurige teal/blauwe kleuraccenten toe in \texttt{src/styles/globals.css} wanneer dat bestand bestaat;
+  \item schrijft de Cursor agent-shell rule naar het project;
+  \item voert post-actions uit voor git-initialisatie en een initial commit.
+\end{itemize}
+
+Daarna voert de server geen verdere imperatieve acties meer uit. Er is geen \texttt{generate-overview-page}, \texttt{generate-detail-view}, \texttt{generate-filters} of \texttt{commit-project-changes}. De prompt specificeert expliciet dat de research-server geen commit-helper heeft en dat de agent na afloop een samenvatting moet geven en de gebruiker moet vragen of die zelf lint of commit wil draaien.
+
+\section{\IfLanguageName{dutch}{Markdown-resources als kennislaag}{Markdown Resources as Knowledge Layer}}
+\label{sec:poc-agentic-resources}
+
+\subsection{Resource-registratie}
+
+De agentic server registreert markdownbestanden uit drie mappen als MCP-resources. Alle resources gebruiken het URI-schema \texttt{ballistix-prompt-docs://}. Dit schema onderscheidt de agentic documentatie van de meer klassieke \texttt{ballistix-docs://}-rules uit de hybride workflow.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Markdown-mounts in de agentic MCP-server}
+  \label{tab:poc-agentic-resource-mounts}
+  \small
+  \begin{tabularx}{\textwidth}{|l|l|X|}
+    \hline
+    \textbf{Mount} & \textbf{Bronmap} & \textbf{Rol} \\
+    \hline
+    \texttt{specs} &
+    \texttt{specs/} &
+    Projectbrede specificaties: architectuur, routes, componentgebruik, code-stijl en naamgeving. \\
+    \hline
+    \texttt{conventions} &
+    \texttt{mcp-docs/conventions/} &
+    Conventies per projecttype of domein, zoals folderstructuur, scaffold-regels en composition patterns. \\
+    \hline
+    \texttt{components} &
+    \texttt{mcp-docs/components/} &
+    Componentdocumentatie voor Ballistix UI-bouwstenen zoals \texttt{TableList}, \texttt{ModalOverlay}, \texttt{Dropdown}, \texttt{InputGroup} en \texttt{SelectMenu}. \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+De registratie loopt recursief over elke mount. Elk markdownbestand wordt omgezet naar een resource met een voorspelbare URI, bijvoorbeeld:
+
+\begin{itemize}
+  \item \texttt{ballistix-prompt-docs://specs/README}
+  \item \texttt{ballistix-prompt-docs://specs/architecture}
+  \item \texttt{ballistix-prompt-docs://conventions/project-scaffold}
+  \item \texttt{ballistix-prompt-docs://conventions/folder-structure}
+  \item \texttt{ballistix-prompt-docs://components/TableList}
+  \item \texttt{ballistix-prompt-docs://components/ModalOverlay}
+\end{itemize}
+
+\subsection{Waarom markdown centraal staat}
+
+Markdown-resources vervullen in deze PoC drie functies. Ten eerste vormen ze een \textit{single source of truth} en de centrale kennislaag voor de agent: de agent hoeft niet in andere repositories te zoeken naar voorbeelden, maar leest de regels uit MCP-resources. Ten tweede zijn ze goedkoper te onderhouden dan codegenererende tools: een nieuwe componentrichtlijn kan als markdown worden toegevoegd zonder TypeScript-tooling aan te passen. Ten derde maken ze de werkwijze transparant voor onderzoekers in deze PoC: de gebruikte instructies zijn leesbare documenten en geen verborgen prompt-fragmenten in code.
+
+Het nadeel is dat markdown geen harde uitvoer afdwingt en dus minder determinisme biedt dan tool-templates. Een tool-template kan garanderen dat een detailpagina altijd een bepaalde structuur heeft; markdown kan dat enkel voorschrijven. Daarom bevat de agentic prompt extra veiligheidsregels over brongebruik, leesvolgorde en workspace-afbakening.
+
+\section{\IfLanguageName{dutch}{De centrale MCP-prompt}{The Central MCP Prompt}}
+\label{sec:poc-agentic-prompt}
+
+\subsection{Prompt: generate-feature-from-documentation}
+
+De prompt \texttt{generate-feature-from-documentation} is de kern van de agentic workflow. Ze heeft drie parameters:
+
+\begin{table}[htbp]
+  \centering
+  \caption{Parameters van de agentic MCP-prompt}
+  \label{tab:poc-agentic-prompt-params}
+  \small
+  \begin{tabularx}{\textwidth}{|l|X|}
+    \hline
+    \textbf{Parameter} & \textbf{Betekenis} \\
+    \hline
+    \texttt{featureDescription} &
+    Natuurlijke taakbeschrijving, bijvoorbeeld een Nederlandstalige briefing voor een carwash-tool met klanten, machines, detailpagina's, mocks en filters. \\
+    \hline
+    \texttt{targetProjectFolder} &
+    Relatieve projectmap waarin gewerkt mag worden. Dit is de grens waarbinnen de agent code mag lezen en wijzigen. \\
+    \hline
+    \texttt{bootstrapWithTemplateCopy} &
+    Boolean die bepaalt of eerst \texttt{create-ballistix-project} moet worden aangeroepen. \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+De prompt genereert geen code rechtstreeks. Ze construeert een gestructureerde instructie voor de agent. Die instructie legt vast welke bronnen toegestaan zijn, welke documenten eerst gelezen moeten worden, welke implementatiepatronen gevolgd moeten worden en welke terminalacties verboden zijn.
+
+\subsection{Toegestane bronnen}
+
+Een belangrijk verschil met een vrije agent is de strikte bronafbakening. De prompt beschrijft exact twee toegestane bronnen:
+
+\begin{enumerate}
+  \item \textbf{Markdown-documentatie:} MCP-resources met schema \texttt{ballistix-prompt-docs://}.
+  \item \textbf{Broncode in de targetmap:} uitsluitend bestanden onder \texttt{targetProjectFolder/}, dus het gekopieerde template en de bestanden die daarbinnen nieuw of gewijzigd worden.
+\end{enumerate}
+
+Daartegenover staan expliciete verboden: geen zoekwerk in andere projectmappen uitvoeren, geen greps over workspace-siblings doen, geen kopieerpatronen uit willekeurige externe repositories overnemen en geen codebase-brede exploratie buiten de targetmap uitvoeren. Deze beperking is essentieel om de onderzoeksopzet te valideren. Zonder deze regel zou de agent alsnog voorbeelden kunnen ophalen uit andere lokale projecten, waardoor de impact van de markdown-resources niet meer zuiver meetbaar is.
+
+\subsection{Aanbevolen leesvolgorde}
+
+De prompt verplicht een documentatie-eerst workflow: de agent moet eerst de projectbrede specificaties lezen, daarna conventies en pas daarna componentdocumentatie opvragen voor de concrete UI die gebouwd wordt.
+
+\begin{enumerate}
+  \item \texttt{ballistix-prompt-docs://specs/README}
+  \item \texttt{ballistix-prompt-docs://specs/architecture}
+  \item \texttt{ballistix-prompt-docs://specs/routes}
+  \item \texttt{ballistix-prompt-docs://specs/components}
+  \item \texttt{ballistix-prompt-docs://specs/code-style}
+  \item \texttt{ballistix-prompt-docs://specs/naming-conventions}
+  \item relevante conventies zoals \texttt{conventions/project-scaffold} en \texttt{conventions/folder-structure}
+  \item relevante componentdocs zoals \texttt{components/TableList}, \texttt{components/ModalOverlay}, \texttt{components/Dropdown} en filtercomponenten
+\end{enumerate}
+
+Deze volgorde voorkomt dat de agent start vanuit toevallige componentvoorbeelden zonder eerst de projectarchitectuur te begrijpen.
+
+\section{\IfLanguageName{dutch}{Agentic implementatieworkflow}{Agentic Implementation Workflow}}
+\label{sec:poc-agentic-workflow}
+
+\subsection{Typische flow}
+
+Een gebruiker kan in Cursor een prompt aanroepen met een Nederlandstalige briefing, bijvoorbeeld:
+
+\begin{quote}
+\textit{``Maak een Ballistix-project aan genaamd carwash-tool. Voorzie pagina's voor klanten en machines. Beide pagina's hebben een tabel met mock data, filters op naam en een detailpagina per rij.''}
+\end{quote}
+
+De agentic workflow verloopt dan als volgt, en illustreert hoe de agent vanuit documentatie naar implementatie evolueert:
+
+\begin{enumerate}
+  \item \textbf{Bootstrap:} indien \texttt{bootstrapWithTemplateCopy=true}, roept de agent \texttt{create-ballistix-project} aan. Het resultaat is een gekopieerd template met eigen git-repository en initiële commit.
+  \item \textbf{Documentatie lezen:} de agent haalt eerst de aanbevolen \texttt{ballistix-prompt-docs://}-resources op.
+  \item \textbf{Beperkte codeverkenning:} pas daarna leest de agent enkele kernbestanden binnen de targetmap, zoals \texttt{src/config/navigation.ts}, \texttt{src/components/List/Table/TableList.tsx}, een bestaand voorbeeld in \texttt{src/views/} en \texttt{src/mock/mockData.ts}.
+  \item \textbf{Implementatie:} de agent schrijft routes, views, partials, mockdata, filters en i18n-keys volgens de opgehaalde markdown.
+  \item \textbf{Afronding:} de agent geeft een samenvatting van aangemaakte routes en bestanden. Omdat deze server geen commit-tool heeft, vraagt hij of de gebruiker zelf lint of commit wil uitvoeren.
+\end{enumerate}
+
+\subsection{Implementatie-checklist}
+
+De prompt bevat een korte checklist die de belangrijkste Ballistix-regels bundelt. De briefing mag Nederlands zijn, maar artefacten zoals routes, componentnamen, types, mocks en keys blijven Engels. Per domein moet de agent een overview-route, een \texttt{*View} en een \texttt{*Overview}-partial voorzien. Tabellen gebruiken de project-\texttt{TableList}; filters worden uitsluitend via \texttt{secondaryActions} gemount. Wanneer rij-acties of detailnavigatie gevraagd worden, gebruikt de agent een actions-kolom en een partial onder \texttt{views/.../partials}. Detailpagina's krijgen een doelgerichte naam en geen misleidende \texttt{*Overview}-suffix.
+
+Deze checklist vervangt geen toolvalidatie zoals in de hybride workflow, maar maakt de verwachte output expliciet. De agent moet de regels interpreteren en toepassen in de bestaande projectstructuur.
+
+\section{\IfLanguageName{dutch}{Hallucinatiebeperking zonder codegenererende tools}{Hallucination Mitigation without Code-Generating Tools}}
+\label{sec:poc-agentic-hallucinatie}
+
+\subsection{Beperkingslagen}
+
+Omdat deze PoC geen gespecialiseerde codegeneratietools gebruikt, moet hallucinatiebeperking op andere lagen worden gerealiseerd.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Hallucinatiebeperking in de agentic workflow}
+  \label{tab:poc-agentic-hallucination}
+  \small
+  \begin{tabularx}{\textwidth}{|l|X|X|}
+    \hline
+    \textbf{Laag} & \textbf{Mechanisme} & \textbf{Voorbeeld} \\
+    \hline
+    Template &
+    De projectbasis wordt gekopieerd uit een vaste Ballistix-template. &
+    De agent hoeft geen Next.js-, Tailwind- of i18n-setup te verzinnen. \\
+    \hline
+    Markdown-resources &
+    Regels staan in \texttt{specs}, \texttt{conventions} en \texttt{components}. &
+    \texttt{components/TableList} beschrijft hoe tabellen moeten worden opgebouwd. \\
+    \hline
+    Prompt-grenzen &
+    De prompt verbiedt zoeken buiten de targetmap en verplicht documentatie-eerst werken. &
+    Geen patronen kopiëren uit andere lokale repositories. \\
+    \hline
+    Workspace-afbakening &
+    Alleen bestanden onder \texttt{targetProjectFolder/} zijn geldige codebronnen. &
+    Een glob of search over de volledige workspace is buiten scope. \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsection{Resterende risico's}
+
+De agentic aanpak blijft gevoeliger voor interpretatiefouten dan de hybride aanpak. Mogelijke fouten zijn onder meer: filters toch buiten \texttt{secondaryActions} plaatsen, componentdocs verkeerd combineren, i18n-keys vergeten, of een detailpagina te veel laten lijken op een overview. In de hybride server zouden sommige van deze fouten door templates of Zod-schema's worden afgevangen. In de agentic server moeten ze via documentatie, promptdiscipline en code-review worden opgespoord.
+
+Dit risico is echter ook het centrale onderzoekspunt van deze PoC. De agentic PoC laat toe te meten hoeveel structuur nodig is voordat een LLM-agent betrouwbaar genoeg wordt zonder voor elke feature een aparte tool te schrijven.
+
+\section{\IfLanguageName{dutch}{Evaluatieopzet}{Evaluation Setup}}
+\label{sec:poc-agentic-evaluatie}
+
+\subsection{Te meten aspecten}
+
+De evaluatie van deze agentic workflow richt zich op dezelfde hoofddimensies als de hybride workflow, maar met andere verwachtingen:
+
+\begin{itemize}
+  \item \textbf{Token-verbruik:} vermoedelijk hoger dan de hybride workflow, omdat de agent meer markdown moet lezen en meer code zelf schrijft.
+  \item \textbf{Hallucinatie-ratio:} vermoedelijk hoger dan bij template-tools, maar lager dan een volledig unrestricted workflow dankzij resource-afbakening.
+  \item \textbf{Opstarttijd:} afhankelijk van hoeveel documentatie de agent ophaalt en hoeveel code hij zelf moet verkennen.
+  \item \textbf{Codekwaliteit:} gemeten via lint/build of via handmatige review van de gegenereerde featurebestanden, met dezelfde featurebriefings als vergelijkingsbasis.
+  \item \textbf{Onderhoudbaarheid:} kwalitatief beoordeeld op basis van hoeveel aanpassingen nodig zijn om nieuwe regels toe te voegen.
+\end{itemize}
+
+\subsection{Vergelijkingswaarde}
+
+Deze agentic PoC vormt een tussenpositie tussen twee uitersten. Aan de ene kant staat een unrestricted agent die vrij zoekt en vrij code schrijft. Aan de andere kant staat de hybride MCP-server die veel gedrag omzet in concrete codegenererende tools. De agentic server onderzoekt of een kleinere toolset, gecombineerd met rijke markdown-documentatie, voldoende structuur biedt voor Ballistix-projectopstart.
+
+De verwachte uitkomst is niet dat de agentic workflow systematisch beter scoort dan de hybride workflow. De relevante vraag is waar de trade-off ligt: hoeveel determinisme en hallucinatiebeperking gaat verloren wanneer tools worden weggelaten, en hoeveel onderhoudbaarheid en flexibiliteit komt daarvoor terug?
+
+\section{\IfLanguageName{dutch}{Samenvatting}{Summary}}
+\label{sec:poc-agentic-samenvatting}
+
+De agentic MCP-server toont een alternatieve implementatie van dezelfde projectopstartproblematiek. In plaats van meerdere gespecialiseerde codegeneratietools te bouwen, registreert de server een grote set markdown-resources en één centrale prompt. Alleen de initiële template-copy blijft als tool bestaan.
+
+Deze keuze maakt de workflow eenvoudiger en documentatiegedreven. De agent krijgt meer autonomie, maar werkt binnen strikte grenzen: uitsluitend \texttt{ballistix-prompt-docs://}-resources en uitsluitend code onder de target projectmap. Daarmee wordt de PoC geschikt om te onderzoeken of markdown-context voldoende is om een LLM-agent betrouwbaar Ballistix-conforme features te laten implementeren, en hoe die aanpak zich verhoudt tot de meer deterministische hybride MCP-workflow. In de evaluatie wordt vervolgens nagegaan in welke mate deze markdown-context voldoende structuur biedt voor consistente projectopstart.

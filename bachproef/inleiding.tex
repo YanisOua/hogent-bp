@@ -1,48 +1,48 @@
 \chapter{\IfLanguageName{dutch}{Inleiding}{Introduction}}
 \label{ch:inleiding}
 
-De initiële projectopstart van een nieuwe frontend-applicatie vraagt vandaag nog veel repetitief werk. Voor digital agencies is niet alleen de \textit{time-to-market} van het eindproduct belangrijk, maar ook de \textit{time-to-demo} in presales- en projectcontext. Binnen agencies die B2B-webapplicaties ontwikkelen volgens een gestandaardiseerde architectuur --- gebaseerd op een interne React-componentenbibliotheek en vaste code-stijlen --- zijn veel bouwstenen, zoals navigatiestructuren, formulieren en tabellen, in principe herbruikbaar. Toch verloopt de opstart vandaag nog grotendeels manueel. Dat repetitieve karakter leidt tot onnodig tijdsverlies en vergroot het risico op inconsistenties tussen projecten. Bovendien vereisen handmatige fouten of afwijkingen van de standaard achteraf vaak nog extra correctiewerk.
+Digital agencies beheren een continue stroom van frontend-projecten: sommige strekken zich uit over meerdere jaren en releases, terwijl andere binnen een half jaar al een versie 1.0 moeten leveren. Volgens de Stack Overflow Developer Survey 2025 gebruikt 84\% van de developers AI-tools of plant dit, met 51\% dagelijkse professionele toepassing, maar generieke output leidt vaak tot hoge correctie-overhead \autocite{stackoverflow2025}. Hoewel de initi\"ele projectopstart slechts een klein onderdeel vormt van het totale ontwikkeltraject, is het cruciaal voor snelle \textit{time-to-demo} in salesgesprekken en voor tijdwinst bij developers. Het effici\"enter opstarten van projecten biedt dus niet alleen directe voordelen voor developers, maar ook strategische waarde door last-minute demo's mogelijk te maken.
 
 \section{\IfLanguageName{dutch}{Probleemstelling}{Problem Statement}}
 \label{sec:probleemstelling}
 
-De doelgroep van dit onderzoek omvat enerzijds de frontend developers en technical leads, en anderzijds de platform engineers en DevOps-engineers, die binnen digital agencies verantwoordelijk zijn voor respectievelijk de projectopstart en het beheer van \textit{Internal Developer Platforms} (IDPs). Binnen de softwaresector wordt steeds vaker gekeken naar automatisering en AI-ondersteuning als mogelijke oplossingsrichting om dit soort repetitieve taken te vereenvoudigen~\autocite{Sergeyuk2024}. Tegelijk blijft het een uitdaging om dergelijke aanpakken af te stemmen op een specifieke bedrijfscontext. Generieke tools en modellen kunnen snel output genereren, maar houden vaak onvoldoende rekening met interne componentenbibliotheken, architecturale afspraken en huisstijlrichtlijnen~\autocite{Veracode2025}. Dit resulteert in output die functioneel mogelijk bruikbaar is, maar die nog aanzienlijk extra correctiewerk vereist om volledig binnen de bestaande standaard te passen.
+De doelgroep van dit onderzoek zijn primair frontend-developers in digital agencies, die verantwoordelijk zijn voor de initi\"ele projectopstart. Er bestaan AI-tools voor codegeneratie, maar deze zijn out-of-the-box generiek omdat de onderliggende modellen zijn getraind op diverse internetcode~ \autocite{Sergeyuk2024}. Dit leidt tot output die niet aansluit bij agency-specifieke huisstijlen, componentenbibliotheken en architecturale afspraken, met aanzienlijke correctie-overhead tot gevolg~ \autocite{Veracode2025}.
 
-Deze bijkomende correcties vergroten de totale inspanning en beperken de verwachte winst van de automatisering. In die context verkent deze bachelorproef in welke mate context-gedreven aanpakken de bedrijfscontext beter kunnen integreren en zo de correctie-overhead kunnen verminderen. We definiëren deze correctie-overhead hierbij kortweg als de effectieve tijd die een developer nodig heeft om AI-gegenereerde output achteraf handmatig af te stemmen op de interne bedrijfsstandaarden. Meer concreet worden twee benaderingen onderzocht: enerzijds een meer \textit{unrestricted} agentic aanpak, die zo veel mogelijk vrij redeneert op basis van aangeleverde context, en anderzijds een meer \textit{hybride} workflow waarin AI gestuurd wordt via templates, tools en strikt gedefinieerde bronnen. Zo kan systematisch vergeleken worden in welke mate bijkomende structuur hallucinaties en tokenverbruik reduceert, en of de extra set-upkost zich in de praktijk terugverdient bij de projectopstart.
+Deze overhead vergroot de totale inspanning en beperkt de automatiseringwinst. Uit een Digital Applied survey (2026) blijkt dat agencies AI-coding tools adopteren, maar slechts 34\% significante transformatie realiseert door context-mismatch \autocite{digitalapplied2026}. Dit onderzoek verkent betere manieren met hedendaagse tools, door drie benaderingen te vergelijken: (1) manuele opstart, (2) generieke methode (prompt met voorbeeldprojecten), en (3) context-gedreven aanpakken (agentic en hybride MCP, beperkt tot frameworks zoals LangChain en AutoGen). Zo wordt systematisch ge\"evalueerd hoe deze structuurhallucinaties, tijd en kosten reduceren.
 
 \section{\IfLanguageName{dutch}{Onderzoeksvraag}{Research question}}
 \label{sec:onderzoeksvraag}
 
-In het oorspronkelijke onderzoeksvoorstel lag de focus nog eenzijdig op verregaande automatisering en het maximaliseren van tijdsreductie. Voortschrijdend inzicht uit de literatuur en de praktijk heeft deze insteek echter verbreed naar een vergelijkende vraagstelling over de \textit{balans} tussen verschillende aanpakken. Deze verschuiving is een bewuste methodologische keuze voor neutraliteit, waarbij niet blind gestuurd wordt op pure snelheid, maar evengoed op de kwalitatieve inpasbaarheid van de output in de bestaande bedrijfscontext en de operationele kost van de AI-ondersteuning. De centrale onderzoeksvraag van deze bachelorproef vermijdt bijgevolg de veronderstelling dat één specifieke technologie de enige oplossing is, en focust in plaats daarvan op het resultaat:
+Op basis van literatuur en praktijk richt dit onderzoek zich op een vergelijkende evaluatie van aanpakken. De centrale onderzoeksvraag luidt:
 
-\textit{Welke aanpak biedt binnen een specifieke agency-huisstijl de beste balans tussen snelheid, kwaliteit, consistentie en kost (bijvoorbeeld tokenverbruik) bij de initiële projectopstart van frontend-applicaties?}
+\textit{Welke aanpak biedt binnen een agency-huisstijl de beste balans tussen snelheid, kwaliteit, consistentie en kost bij de initi\"ele projectopstart van frontend-applicaties?}
 
-De balans wordt hierbij geoperationaliseerd aan de hand van vier criteria: de totale doorlooptijd, de correctie-overhead, de architecturale fit van de gegenereerde output, en de operationele kost van de gekozen aanpak (zoals API-kost en tokenverbruik)~\autocite{Augment2025}.
+De balans wordt ge\"operationaliseerd via totale doorlooptijd, correctie-overhead (in \% en uren), architecturale fit en operationele kosten~ \autocite{Augment2025}.
 
 De volgende deelvragen ondersteunen het onderzoek:
 \begin{enumerate}
-\item \textbf{Deelvraag 1 (Analyse):} Welke stappen in de huidige projectopstart zijn het meest repetitief en tijdrovend, op basis van historische data en tijdsinschattingen van frontend developers?
-\item \textbf{Deelvraag 2 (Vergelijking):} In welke mate verschillen generieke en context-geoptimaliseerde aanpakken in hun vermogen om consistente output te genereren?
-\item \textbf{Deelvraag 3 (Input-validatie):} Onder welke voorwaarden heeft de meegeleverde context invloed op de bruikbaarheid van de gegenereerde projectonderdelen?
-\item \textbf{Deelvraag 4 (Evaluatie):} Welke aanpak vereist de minste correcties en resulteert in de beste balans qua totale doorlooptijd, architecturale fit en kost/tokenverbruik?
+\item \textbf{Deelvraag 1 (Probleemdomein):} Wat zijn de agency-specifieke eisen (huisstijl, componenten, architectuur) voor frontend-projectopstart?
+\item \textbf{Deelvraag 2 (Vergelijking):} In welke mate verschillen generieke en context-geoptimaliseerde aanpakken in consistente output?
+\item \textbf{Deelvraag 3 (Input-validatie):} Onder welke voorwaarden be\"invloedt context de bruikbaarheid van gegenereerde onderdelen?
+\item \textbf{Deelvraag 4 (Evaluatie):} Welke aanpak minimaliseert correcties en optimaliseert tijd, kwaliteit en kost?
 \end{enumerate}
 
 \section{\IfLanguageName{dutch}{Onderzoeksdoelstelling}{Research objective}}
 \label{sec:onderzoeksdoelstelling}
 
-Het doel van dit onderzoek is om verschillende aanpakken voor de initiële projectopstart te analyseren en met elkaar te vergelijken binnen de agency-context~\autocite{Fang2024}. Op basis daarvan wordt een \textbf{Proof-of-Concept (PoC)} ontwikkeld om te evalueren in welke mate bedrijfsspecifieke context de kwaliteit, consistentie en efficiëntie van de output kan verbeteren, en welke impact verschillende workflow-keuzes hebben op kost en tokenverbruik. Het eindresultaat is enerzijds een functioneel uitgewerkte agentic workflow en anderzijds een meer hybride, template-gedreven workflow, die, gegeven een agency-briefing als input, een projectstructuur genereren die voldoet aan vooraf bepaalde kwaliteitsdrempels voor architecturale fit en onderhoudbaarheid. Beide varianten worden geëvalueerd op hun impact op correctiewerk, totale doorlooptijd en operationele kost, zodat gefundeerd kan worden gekozen welke aanpak in de agency-context de meeste meerwaarde biedt.
+Dit onderzoek analyseert en vergelijkt aanpakken voor projectopstart binnen agency-context~ \autocite{Fang2024}. Een \textbf{Proof-of-Concept (PoC)} evalueert hoe bedrijfsspecifieke context kwaliteit, consistentie en effici\"entie verbetert (via metrics uit DQ4), met impact op tijd, kwaliteit en kost. Eindresultaat: drie workflows (manueel, generiek, hybride MCP), getest op correctiewerk en doorlooptijd, voor gefundeerde aanbevelingen.
 
 \section{\IfLanguageName{dutch}{Opzet van deze bachelorproef}{Structure of this bachelor thesis}}
 \label{sec:opzet-bachelorproef}
 
 De rest van deze bachelorproef is als volgt opgebouwd:
 
-In Hoofdstuk~\ref{ch:stand-van-zaken} wordt de stand van zaken binnen het domein besproken, met focus op de balans tussen snelheid, kwaliteit en kost, en relevante benaderingen voor contextvoorziening.
+In Hoofdstuk~\ref{ch:stand-van-zaken} wordt de stand van zaken besproken.
 
-In Hoofdstuk~\ref{ch:methodologie} wordt de methodologie toegelicht, inclusief de nulmeting en de opzet van de experimenten.
+In Hoofdstuk~\ref{ch:methodologie} de methodologie.
 
-In Hoofdstuk~\ref{ch:poc} wordt de technische realisatie van de PoC beschreven.
+In Hoofdstuk~\ref{ch:poc} de PoC-realisatie.
 
-In Hoofdstuk~\ref{ch:evaluatie} worden de resultaten van de experimenten geanalyseerd en vergeleken.
+In Hoofdstuk~\ref{ch:evaluatie} de resultaten.
 
-In Hoofdstuk~\ref{ch:conclusie} worden de onderzoeksvragen beantwoord en wordt een aanzet gegeven voor toekomstig onderzoek.
+In Hoofdstuk~\ref{ch:conclusie} de conclusie, aanbevelingen en toekomstperspectief.
