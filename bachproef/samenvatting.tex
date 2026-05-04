@@ -2,47 +2,125 @@
 %% Samenvatting
 %%=============================================================================
 
-% TODO: De "abstract" of samenvatting is een kernachtige (~ 1 blz. voor een
-% thesis) synthese van het document.
-%
-% Een goede abstract biedt een kernachtig antwoord op volgende vragen:
-%
-% 1. Waarover gaat de bachelorproef?
-% 2. Waarom heb je er over geschreven?
-% 3. Hoe heb je het onderzoek uitgevoerd?
-% 4. Wat waren de resultaten? Wat blijkt uit je onderzoek?
-% 5. Wat betekenen je resultaten? Wat is de relevantie voor het werkveld?
-%
-% Daarom bestaat een abstract uit volgende componenten:
-%
-% - inleiding + kaderen thema
-% - probleemstelling
-% - (centrale) onderzoeksvraag
-% - onderzoeksdoelstelling
-% - methodologie
-% - resultaten (beperk tot de belangrijkste, relevant voor de onderzoeksvraag)
-% - conclusies, aanbevelingen, beperkingen
-%
-% LET OP! Een samenvatting is GEEN voorwoord!
-
-%%---------- Nederlandse samenvatting -----------------------------------------
-%
-% TODO: Als je je bachelorproef in het Engels schrijft, moet je eerst een
-% Nederlandse samenvatting invoegen. Haal daarvoor onderstaande code uit
-% commentaar.
-% Wie zijn bachelorproef in het Nederlands schrijft, kan dit negeren, de inhoud
-% wordt niet in het document ingevoegd.
-
-\IfLanguageName{english}{%
-\selectlanguage{dutch}
 \chapter*{Samenvatting}
-\lipsum[1-4]
-\selectlanguage{english}
-}{}
 
-%%---------- Samenvatting -----------------------------------------------------
-% De samenvatting in de hoofdtaal van het document
+\section*{Probleemstelling}
 
-\chapter*{\IfLanguageName{dutch}{Samenvatting}{Abstract}}
+De initiële projectopstart van frontend-applicaties in digital agencies verloopt vandaag nog grotendeels manueel, ondanks dat veel onderdelen (navigatie, formulieren, tabellen, routing) herbruikbaar zijn. Dit repetitieve karakter leidt tot onnodig tijdsverlies, inconsistenties tussen projecten en verhoogde kans op architecturale fouten. Hoewel Large Language Models (LLM's) toenemend gebruikt worden voor codegeneratie, blijkt pure automatisering onbetrouwbaar: gegenereerde code voldoet vaak onvoldoende aan interne design systems en componentenbibliotheken, wat aanzienlijke correctiewerk vereist (``correction overhead''). Dit onderzoek richt zich op de vraag in welke mate context-geoptimaliseerde, hybride workflows deze overhead kunnen beperken.
 
-\lipsum[1-4]
+\section*{Onderzoeksvraag}
+
+\textbf{Welke aanpak biedt binnen een specifieke agency-huisstijl de beste balans tussen snelheid, kwaliteit, consistentie en kost (bijvoorbeeld tokenverbruik) bij de initiële projectopstart van frontend-applicaties?}
+
+Deze vraag wordt geoperationaliseerd aan de hand van vier criteria: totale doorlooptijd, correctie-overhead, architecturale fit van gegenereerde code, en operationele kosten (token-verbruik).
+
+\section*{Methodologie}
+
+Dit onderzoek volgt een \textit{applied research}-aanpak met een functioneel proof-of-concept (PoC). Twee workflow-benaderingen worden vergeleken:
+
+\begin{enumerate}
+  \item \textbf{Unrestricted:} Een LLM (Cursor Pro, Composer 2) redeneert vrij op basis van gegeven context (markdown-bestanden, componentdocumentatie).
+  
+  \item \textbf{Hybride MCP:} Een TypeScript-gebaseerde MCP-server ontsluit structuur via templates, tools en gecontroleerde resources, zodat de LLM gestuurd wordt.
+\end{enumerate}
+
+Voor elk scenario (3 complexiteitsniveaus) worden minstens 2 testruns uitgevoerd. Metrieken worden vastgelegd: opstarttijd, tokenverbruik, hallucinatie-ratio, architecturale fit (design system compliance), en correction overhead. De gegenereerde projecten zijn \textit{skimmed-down}-versies van volledige Ballistix-projecten (geen volledige backend-integratie of geavanceerde authenticatie, maar wel representatief voor kernkeuzes in workflow-design).
+
+\section*{Resultaten}
+
+De hybride MCP-aanpak toont aanzienlijke verbeteringen:
+
+\begin{itemize}
+  \item \textbf{Opstarttijd:} 4--12 minuten (afhankelijk van projectcomplexiteit).
+  
+  \item \textbf{Tokenverbruik:} 19.5--44.5K tokens per project, met \textbf{sublineaire groei} (scenario 3 verbruikt slechts 1.04× meer tokens dan scenario 1 ondanks 4× meer pagina's).
+  
+  \item \textbf{Code-kwaliteit:} 80--95\% van gegenereerde code is architecturaal correct; hallucinaties zijn primair stijl-gerelateerd (45\%), niet structureel.
+  
+  \item \textbf{Design system compliance:} 85--90\% (vs. 50--60\% bij unrestricted aanpak).
+  
+  \item \textbf{Correction overhead:} \textasciitilde 2--4 uur per project (vs. \textasciitilde 8--16 uur handmatig codering).
+\end{itemize}
+
+Templates als ``safety rails'' blijken zeer effectief: ze elimineren architecturale hallucinaties terwijl token-kosten laag blijven.
+
+\section*{Conclusie}
+
+Een \textbf{hybride architectuur met template-injectie, parametrische tools en resource-gedreven prompting} biedt een praktisch evenwicht tussen volledig autonome generatie (onbetrouwbaar, duur) en handmatig codering (traag). 
+
+Kernbevindingen:
+\begin{enumerate}
+  \item Templates winnen van pure generatie in gestructureerde domeinen (CRUD-apps).
+  
+  \item Sublineaire token-groei bij template-reuse maakt groot-schalige inzet kostenefficiënt.
+  
+  \item Gegenereerde code biedt een degelijke basis (80--95\% correct), niet direct productie-ready.
+  
+  \item MCP-server opzet (24 uur) betaalt zich terug na 5--10 projecten door tijdsbesparing.
+\end{enumerate}
+
+Voor MVP's en PoC's is deze besparing significant. Met verdere investering in granulaire tools, post-generation validatie en multi-model evaluatie kan kwaliteit naar 95--100\% stijgen zonder drastische token-stijging.
+
+\textbf{Eindconclusie:} Hybrid is beter dan beide extremen. Templates + parametrische LLM-generatie vormen een toekomstbestendige aanpak voor enterprise-schaal project-scaffolding.
+
+\newpage
+\chapter*{Abstract}
+
+\section*{Problem Statement}
+
+Initial project setup for frontend applications in digital agencies remains largely manual despite the fact that many components (navigation, forms, tables, routing) are reusable. This repetitive nature leads to unnecessary time loss, inconsistencies between projects, and increased risk of architectural errors. Although Large Language Models (LLMs) are increasingly used for code generation, pure automation proves unreliable: generated code often fails to meet internal design systems and component libraries, requiring significant correction work (``correction overhead''). This research examines the extent to which context-optimized, hybrid workflows can reduce this overhead.
+
+\section*{Research Question}
+
+\textbf{Which approach offers the best balance between speed, quality, consistency, and cost (e.g., token consumption) for initial frontend application project setup within a specific agency house style?}
+
+This question is operationalized using four criteria: total turnaround time, correction overhead, architectural fit of generated code, and operational costs (token consumption).
+
+\section*{Methodology}
+
+This research follows an \textit{applied research} approach with a functional proof-of-concept (PoC). Two workflow approaches are compared:
+
+\begin{enumerate}
+  \item \textbf{Unrestricted:} An LLM (Cursor Pro, Composer 2) reasons freely based on provided context (markdown files, component documentation).
+  
+  \item \textbf{Hybrid MCP:} A TypeScript-based MCP server exposes structure via templates, tools, and controlled resources, guiding the LLM.
+\end{enumerate}
+
+For each scenario (3 complexity levels), at least 2 test runs are performed. Metrics are recorded: startup time, token consumption, hallucination ratio, architectural fit (design system compliance), and correction overhead. Generated projects are \textit{skimmed-down} versions of full Ballistix projects (no full backend integration or advanced authentication, but representative of core workflow design decisions).
+
+\section*{Results}
+
+The hybrid MCP approach demonstrates significant improvements:
+
+\begin{itemize}
+  \item \textbf{Startup time:} 4--12 minutes (depending on project complexity).
+  
+  \item \textbf{Token consumption:} 19.5--44.5K tokens per project, with \textbf{sublinear growth} (scenario 3 consumes only 1.04× more tokens than scenario 1 despite 4× more pages).
+  
+  \item \textbf{Code quality:} 80--95\% of generated code is architecturally correct; hallucinations are primarily style-related (45\%), not structural.
+  
+  \item \textbf{Design system compliance:} 85--90\% (vs. 50--60\% with unrestricted approach).
+  
+  \item \textbf{Correction overhead:} \textasciitilde 2--4 hours per project (vs. \textasciitilde 8--16 hours manual coding).
+\end{itemize}
+
+Templates as ``safety rails'' prove highly effective: they eliminate architectural hallucinations while keeping token costs low.
+
+\section*{Conclusion}
+
+A \textbf{hybrid architecture with template injection, parametric tools, and resource-driven prompting} provides a practical balance between fully autonomous generation (unreliable, expensive) and manual coding (slow).
+
+Key findings:
+\begin{enumerate}
+  \item Templates outperform pure generation in structured domains (CRUD apps).
+  
+  \item Sublinear token growth with template reuse makes large-scale deployment cost-effective.
+  
+  \item Generated code provides a solid foundation (80--95\% correct), not immediately production-ready.
+  
+  \item MCP server setup (24 hours) pays for itself after 5--10 projects through time savings.
+\end{enumerate}
+
+For MVPs and PoCs, this savings is significant. With further investment in granular tools, post-generation validation, and multi-model evaluation, quality can scale to 95--100\% without drastic token increases.
+
+\textbf{Final conclusion:} Hybrid is better than both extremes. Templates + parametric LLM generation form a future-proof approach for enterprise-scale project scaffolding.

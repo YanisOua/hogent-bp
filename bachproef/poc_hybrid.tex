@@ -1,0 +1,1814 @@
+%%=============================================================================
+%% PoC: hybride MCP-workflow (resources, tools, templates)
+%%=============================================================================
+
+\chapter{\IfLanguageName{dutch}{Proof-of-Concept: Hybride MCP-workflow}{Proof-of-Concept: Hybrid MCP workflow}}%
+\label{ch:poc_hybrid}
+
+\section{\IfLanguageName{dutch}{Inleiding}{Introduction}}
+\label{sec:poc-inleiding}
+
+Dit hoofdstuk beschrijft de technische realisatie van een functionele agentic workflow voor de geautomatiseerde projectopstart binnen Ballistix Digital. Voortbouwend op de methodologie uit Hoofdstuk~\ref{ch:methodologie} worden twee workflow-benaderingen praktisch uitgewerkt en vergeleken: (1) een \textit{unrestricted} aanpak waarin een LLM vrijuit redeneert op basis van gegeven context, en (2) een \textit{hybride} MCP-gebaseerde workflow waarin structuur via templates, tools en gecontroleerde resources de agent begeleidt.
+
+Het focus van dit hoofdstuk ligt op de hybride workflow, aangezien dit de experimentele kern van de PoC vormt. We beschrijven hoe een TypeScript-gebaseerde MCP-server~\autocite{modelcontextprotocol2026} de interne componentenbibliotheek, design tokens en code-genererende tools ontsluit, zodat een LLM in Cursor Pro~\autocite{CursorProUsage2026} gestructureerde aanvragen kan doen en gevalideerde code kan ontvangen. Deze architectuur minimaliseert hallucinaties door templates als ``safety rails'' in te zetten en code-generatie stap-voor-stap via MCP-tools uit te voeren.
+
+De gegenereerde projecten in deze PoC zijn \textit{skimmed-down}-versies van volledige Ballistix-projecten: zij bevatten basale projectopstart (folder-structuur, routing, basis-componenten, formulieren) maar laten complexere onderdelen zoals volledige backend-integratie, geavanceerde authenticatie en deployment-scripts achterwege. Deze beperking maakt de scope hanteerbaar terwijl de methodologische keuzes (templates vs. prompts, MCP-tools vs. resources) nog steeds zichtbaar worden.
+
+De opzet van dit hoofdstuk volgt de evolutie van de implementatie: eerst presenteren we de algemene architectuur van de MCP-server (Sectie~\ref{sec:poc-architectuur}), daarna de setup en konfiguratie (Sectie~\ref{sec:poc-setup}), vervolgens de kerntools voor code-generatie (Sectie~\ref{sec:poc-tools}), daarna de gestructureerde resources en prompts (Sectie~\ref{sec:poc-resources}), en tenslotte de integratie met Cursor Pro inclusief token-tracking (Sectie~\ref{sec:poc-cursor}).
+
+\section{\IfLanguageName{dutch}{Architectuuroverzicht}{Architecture Overview}}
+\label{sec:poc-architectuur}
+
+\subsection{Systeemarchitectuur}
+
+De MCP-gebaseerde workflow voor de Ballistix-projectopstart bestaat uit vier interconnecteerde onderdelen: (1) een \texttt{ballistix-mcp} TypeScript-server die tools en resources ontsluit, (2) een template-project dat als basis voor nieuwe projecten wordt gekopieerd, (3) een set van documentatie-resources die code-generatie-regels vastleggen, en (4) een LLM-client in Cursor Pro dat via MCP-protocol tools aanroept en resources raadpleegt.
+
+\subsubsection{Architectuurdiagram}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[
+    box/.style={rectangle, draw=black, thick, minimum width=3cm, minimum height=0.8cm, text centered},
+    arrow/.style={->, thick, >=stealth},
+    small_box/.style={rectangle, draw=black, thin, minimum width=2.5cm, minimum height=0.6cm, font=\small, text centered}
+  ]
+    
+    % Top layer: Cursor Pro / User
+    \node[box, fill=cyan!20] (cursor) at (4, 10) {Cursor Pro (LLM)};
+    \node[font=\footnotesize, above=0.2 of cursor] {Composer 2 / Opus 4.7 / GPT-5.5};
+    
+    % MCP connection
+    \draw[arrow] (cursor) -- (4, 8.5);
+    \node[font=\footnotesize, right=0.3 of cursor.south] {MCP protocol};
+    
+    % MCP Server
+    \node[box, fill=orange!20] (mcp) at (4, 7) {ballistix-mcp (TypeScript)};
+    \node[font=\footnotesize, below=0.1 of mcp] {Server via stdio};
+    
+    % MCP branches to Tools and Resources
+    \draw[arrow] (mcp) -- (1.5, 5);
+    \draw[arrow] (mcp) -- (6.5, 5);
+    
+    % Tools
+    \node[box, fill=green!20] (tools_header) at (1.5, 5.8) {Tools};
+    \node[small_box] (tool1) at (1.5, 4.5) {create-project};
+    \node[small_box] (tool2) at (1.5, 3.7) {generate-overview};
+    \node[small_box] (tool3) at (1.5, 2.9) {generate-detail-view};
+    \node[small_box] (tool4) at (1.5, 2.1) {generate-filters};
+    \node[small_box] (tool5) at (1.5, 1.3) {commit-changes};
+    
+    % Resources
+    \node[box, fill=blue!20] (resources_header) at (6.5, 5.8) {Resources};
+    \node[small_box] (res1) at (6.5, 4.5) {overview-page-rules};
+    \node[small_box] (res2) at (6.5, 3.9) {table-list-rules};
+    \node[small_box] (res3) at (6.5, 3.3) {detail-views-rules};
+    \node[small_box] (res4) at (6.5, 2.7) {overview-filters-rules};
+    \node[small_box] (res5) at (6.5, 2.1) {table-list-actions};
+    \node[small_box] (res6) at (6.5, 1.5) {agent-shell-workflow};
+    
+    % Connections from resources to template project
+    \draw[arrow] (res1) -- (4, 0.5);
+    \draw[arrow] (res2) -- (4, 0.5);
+    \draw[arrow] (res3) -- (4, 0.5);
+    \draw[arrow] (res4) -- (4, 0.5);
+    \draw[arrow] (res5) -- (4, 0.5);
+    \draw[arrow] (res6) -- (4, 0.5);
+    
+    % Template project / Output
+    \node[box, fill=purple!20] (output) at (4, -0.8) {Gegenereerd Ballistix-project};
+    \node[font=\footnotesize, below=0.1 of output] {(kopie van template, aangepast via tools)};
+    
+  \end{tikzpicture}
+  \caption{Systeemarchitectuur: MCP-server schakelt tussen Cursor Pro en tools/resources.}
+  \label{fig:poc-architectuur}
+\end{figure}
+
+\subsubsection{Workflow-flow}
+
+De gebruiker formuleert in Cursor Pro een \texttt{/plan}-instructie in natuurlijke taal (Nederlands mag), bijvoorbeeld:
+
+\begin{quote}
+\textit{``Maak een ballistix-project aan genaamd carwash-project. Het heeft 2 pagina's, klanten (tabel) \& zeep-producten (tabel). Voorzie deze twee tabellen van mock-data. De namen van deze tabellen zijn klikbaar en gaan naar een detailpagina.''}
+\end{quote}
+
+Cursor Pro roept hierop de volgende fasen uit:
+
+\begin{enumerate}
+  \item \textbf{Plan-fase:} Cursor bepaalt welke tools en resources nodig zijn (bijv. \texttt{create-project}, \texttt{generate-overview}, \texttt{generate-detail-view}).
+  \item \textbf{Resource-raadpleging:} Alvorens tools aan te roepen, leest Cursor relevante resources in (bijv. \texttt{overview-page-rules}, \texttt{detail-views-rules}) om gedragsnormen vast te stellen.
+  \item \textbf{Tool-uitvoering (iteratief):} Voor elke pagina/component roept Cursor achtereenvolgens MCP-tools aan:
+    \begin{itemize}
+      \item \texttt{create-project} — maakt projectmapstructuur aan (kopie van template).
+      \item \texttt{generate-overview} — genereert overview-page met TableList.
+      \item \texttt{generate-filters} — voegt filter-UI toe aan secondaryActions.
+      \item \texttt{generate-detail-view} — genereert detail-pagina met useRead \& DataTableSection.
+      \item \texttt{commit-project-changes} — voert lint:fix en git commit uit.
+    \end{itemize}
+  \item \textbf{Validatie \& uitvoer:} Elke tool valideert invoer tegen Ballistix-conventies (bijv. geen Nederlandse identifiers in code). De gegenereerde code volgt templates en resources strak.
+\end{enumerate}
+
+\subsection{Kerncomponenten}
+
+\subsubsection{MCP-server (ballistix-mcp)}
+
+De TypeScript-gebaseerde MCP-server~\autocite{MCPTypeScriptSDK2025} serves twee soorten providers:
+
+\begin{itemize}
+  \item \textbf{Tools} — imperatieve acties (code genereren, bestanden schrijven, commits uitvoeren).
+  \item \textbf{Resources} — declaratieve gestructureerde context (markdown-dokumenten met regels en conventies).
+\end{itemize}
+
+De server registreert zich in de globale Cursor-configuratie (\texttt{\~/.cursor}) en wordt automatisch beschikbaar voor alle \texttt{/plan}- en \texttt{/prompt}-instructies. Bij iedere interactie controleert Cursor welke tools en resources relevant zijn en levert deze aan het LLM.
+
+\subsubsection{Tools: Stap-voor-stap code-generatie}
+
+Een tool in dit systeem is een benoemde, geparametriseerde functie die de LLM kan aanroepen. Elke tool is ontworpen om één specifieke generatietaak uit te voeren, met ingebouwde validatie tegen hallucinaties.
+
+\begin{table}[htbp]
+  \centering
+  \caption{MCP-tools voor Ballistix-projectopstart}
+  \label{tab:mcp-tools}
+  \small
+  \begin{tabularx}{\textwidth}{|l|l|X|l|}
+    \hline
+    \textbf{Tool} & \textbf{Input} & \textbf{Output / Doel} & \textbf{Validatie} \\
+    \hline
+    \texttt{create-project} & 
+    \texttt{projectName} (string) &
+    Kopieert template-project naar \texttt{./\{projectName\}} en initializeert git repo. Structuur: \texttt{src/}, \texttt{public/}, \texttt{package.json}, \texttt{.env.local}, etc. &
+    Projectnaam mag geen speciale tekens bevatten; moet lowercase of camelCase zijn \\
+    \hline
+    \texttt{generate-overview} &
+    \texttt{projectName}, \texttt{pageName}, \texttt{entityName}, \texttt{columns} (array) &
+    Genereert overview-pagina met TableList, mock data, en routing conform Ballistix-templates. Outputbestand: \texttt{src/app/\{pageName\}/page.tsx}. &
+    Controleert tegen \texttt{overview-page-rules}, \texttt{table-list-rules}; verwijdert Nederlandse tekst uit identifiers \\
+    \hline
+    \texttt{generate-detail-view} &
+    \texttt{projectName}, \texttt{entityName}, \texttt{routeParam}, \texttt{embedCsv} &
+    Genereert detail-view component met \texttt{useRead}, \texttt{DataTableSection}, query-hooks. Template-basis: gegeven in \texttt{generateDetailView.ts} met placeholders voor entityTypeName, embedJson. &
+    Valideert via template-injectie; geen custom fetch()-calls buiten \texttt{useRead} \\
+    \hline
+    \texttt{generate-filters} &
+    \texttt{projectName}, \texttt{pageName}, \texttt{filterSpecs} (array) &
+    Voegt filter-UI toe aan \texttt{*OverviewFilters}-partial; mount filters in secondaryActions van TableList conform \texttt{overview-filters-rules}. &
+    Geen filter-UI in primaryActions; gebruikt \texttt{useForm}, \texttt{Query/SelectFilter} volgens template \\
+    \hline
+    \texttt{commit-project-changes} &
+    \texttt{projectName}, \texttt{commitMessage} &
+    Voert \texttt{yarn lint:fix} uit in projectdir, danproceed \texttt{git commit} met gegeven message. Output: commit SHA. &
+    Geeft geen yarn dev/build uit; commitMessage volgt conventional commits format \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Resources: Documentatie als structured context}
+
+Resources zijn markdown-documenten die Ballistix-regels en -conventies codificeren. Wanneer Cursor een plan opmaakt, leest het relevante resources in en bevat deze in de context voor het LLM.
+
+\begin{table}[htbp]
+  \centering
+  \caption{MCP-resources: Gestructureerde Ballistix-documentatie}
+  \label{tab:mcp-resources}
+  \small
+  \begin{tabularx}{\textwidth}{|l|l|X|}
+    \hline
+    \textbf{Resource} & \textbf{URI} & \textbf{Doel / Inhoud} \\
+    \hline
+    \texttt{overview-page-rules} & 
+    \texttt{ballistix-docs://rules/overview-pages} &
+    Vastleggen: overview-pages volgen een standaard structuur (header, secondaryActions voor filters, TableList in center). Nederlandse briefing (``klanten'') → Engelse code (``customers''). \\
+    \hline
+    \texttt{table-list-rules} &
+    \texttt{ballistix-docs://rules/table-list} &
+    TableList API: kolommen via \texttt{createColumnHelper}, mock data layout, sorting/paging, accessibility. \\
+    \hline
+    \texttt{detail-views-rules} &
+    \texttt{ballistix-docs://rules/detail-views} &
+    Detail-screens gebruiken \texttt{useRead}-hook, \texttt{DataTableSection} component, \texttt{useParams} voor route-parameters. Geen *Overview-variant op detail-pagina. \\
+    \hline
+    \texttt{overview-filters-rules} &
+    \texttt{ballistix-docs://rules/overview-filters} &
+    Filters: \texttt{useForm} state in *Overview, filter-UI in *OverviewFilters-partial. Keuze tussen mock en backend query-parameters. \\
+    \hline
+    \texttt{table-list-actions} &
+    \texttt{ballistix-docs://rules/table-list-actions} &
+    Actions-kolom: \texttt{createColumnHelper} display, DropdownMenu partial per rij, onderscheid tussen \textit{primaryActions} (globaal) en rij-acties. \\
+    \hline
+    \texttt{agent-shell-workflow} &
+    \texttt{ballistix-docs://rules/agent-shell} &
+    Terminalbeleid: geen willekeurige \texttt{yarn build}/\texttt{yarn dev}; na wijzigingen volstaat \texttt{commit-project-changes} met lint:fix. \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Template-project: Copy-modify-commit aanpak}
+
+Een template-project is een pre-geconfigureerde Ballistix-applicatie met:
+
+\begin{itemize}
+  \item Standaard folder-structuur: \texttt{src/app}, \texttt{src/components}, \texttt{src/hooks}, \texttt{public/}.
+  \item Base konfiguratie: \texttt{next.config.js}, \texttt{tailwind.config.ts}, \texttt{tsconfig.json}, \texttt{.eslintrc}.
+  \item Boilerplate routing, authentication stubs, i18n setup.
+  \item Lege pagina's en partials die via tools later worden ingevuld.
+\end{itemize}
+
+Wanneer \texttt{create-project} wordt aangeroepen, wordt het template-project integraal gekopieerd naar een nieuwe projectmap. Vervolgens modifiëren verdere tools (bijv. \texttt{generate-overview}, \texttt{generate-detail-view}) bestanden in deze kopie conform templates en validatieregels.
+
+Deze ``copy-modify-commit''-aanpak voorkomt dat de LLM volledige projectstructuren moet genereren en minimaliseert afwijkingen van Ballistix-conventies.
+
+\subsection{Hallucinatie-mitigatie: Structuur via templates en tools}
+
+Het centrale inzicht van deze architectuur is dat volledig vrije codegeneratie (''Unrestricted''-scenario uit Hoofdstuk~\ref{ch:methodologie}) tot hallucinaties en hoge token-kosten leidt. In plaats daarvan worden drie lagen van structuur ingezet:
+
+\begin{enumerate}
+  \item \textbf{Resources (Regellaag):} Markdown-documenten vastleggen gedragsregels zonder code te genereren. De LLM raadpleegt deze voortdurend.
+  \item \textbf{Tools (Parametrische laag):} In plaats van ``schrijf een React-component'', roept Cursor \texttt{generate-detail-view(\{entityName: 'Customer', embedCsv: 'address,contact'\})} aan. De tool injecteert parameters in een template en valideert.
+  \item \textbf{Templates (Basisllaag):} Ingesloten code-templates in tools zorgen dat output altijd conform Ballistix-APIs is (bijv. \texttt{useRead}, \texttt{DataTableSection}).
+\end{enumerate}
+
+Deze gelaagde aanpak zorgt ervoor dat:
+
+\begin{itemize}
+  \item Hallucinaties sterk gereduceerd worden (geen vrije fantasie buiten templateboundaries).
+  \item Token-verbruik afneemt (parameter-injection is goedkoper dan volledige code-generatie).
+  \item Output altijd valideerbaar en testbaar is (geen custom API-aanroepen, altijd standaard hooks/componenten).
+\end{itemize}
+
+De afweging: meer hardcoding (templates) tegenover minder hallucinatie en lager token-verbruik — een praktische keuze gegeven de budgetbeperkingen van dit onderzoek~\autocite{CursorTokenTracking2025}.
+
+\section{\IfLanguageName{dutch}{MCP-server setup en konfiguratie}{MCP-Server Setup and Configuration}}
+\label{sec:poc-setup}
+
+\subsection{Architectuur van de server}
+
+De \texttt{ballistix-mcp}-server is een Node.js-applicatie geschreven in TypeScript dat via het Model Context Protocol~\autocite{MCPTypeScriptSDK2025} tools, prompts en documentatie-resources aan Cursor Pro aanbiedt. De server draait via stdio-transport (standaardstroom) en wordt gestart via een eenvoudig Node-commando.
+
+\subsubsection{Entrypoint: server.ts}
+
+De kerninitialisatie van de server gebeurt in \texttt{src/server.ts}:
+
+\begin{minted}[fontsize=\footnotesize, linenos]{typescript}
+#!/usr/bin/env node
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { registerFillOverviewTablePrompt } from "./prompts/registerFillOverviewTablePrompt.js";
+import { registerImplementOverviewFiltersPrompt } from "./prompts/registerImplementOverviewFiltersPrompt.js";
+import { registerDocumentationResources } from "./resources/registerDocumentationResources.js";
+import { registerCommitProjectChangesTool } from "./tools/commitProjectChanges.js";
+import { registerCreateBallistixProjectTool } from "./tools/createBallistixProject.js";
+import { registerGenerateDetailViewTool } from "./tools/generateDetailView.js";
+import { registerGenerateOverviewDropdownMenuTool } from "./tools/generateOverviewDropdownMenu.js";
+import { registerGenerateOverviewPageTool } from "./tools/generateOverviewPage.js";
+
+// Initialize MCP server
+const server = new McpServer({
+  name: "ballistix-mcp",
+  version: "0.1.0",
+});
+
+// Register all tools
+registerCreateBallistixProjectTool(server);
+registerGenerateOverviewPageTool(server);
+registerGenerateOverviewDropdownMenuTool(server);
+registerGenerateDetailViewTool(server);
+registerCommitProjectChangesTool(server);
+
+// Register resources and prompts
+registerDocumentationResources(server);
+registerFillOverviewTablePrompt(server);
+registerImplementOverviewFiltersPrompt(server);
+
+// Start server via stdio
+const transport = new StdioServerTransport();
+await server.connect(transport);
+\end{minted}
+
+\noindent
+Deze initialisatie:
+
+\begin{itemize}
+  \item Importeert alle tool-, prompt- en resource-registratie-functies.
+  \item Instantieert een MCP-server met naam \texttt{ballistix-mcp} versie \texttt{0.1.0}.
+  \item Registreert tools en prompts in vaste volgorde (tools eerst, dan resources).
+  \item Verbindt via \texttt{StdioServerTransport} — communicatie gebeurt via stdin/stdout van het Node-proces.
+\end{itemize}
+
+\subsubsection{Project-structuur}
+
+De actieve servercode volgt deze mappenstructuur:
+
+\begin{table}[htbp]
+  \centering
+  \caption{Mappenstructuur van ballistix-mcp (actieve code)}
+  \label{tab:mcp-structure}
+  \small
+  \begin{tabularx}{\textwidth}{|l|X|}
+    \hline
+    \textbf{Pad} & \textbf{Rol} \\
+    \hline
+    \texttt{src/server.ts} & 
+    Entrypoint; registreert alle tools, prompts en resources. \\
+    \hline
+    \texttt{src/config/paths.ts} &
+    Centrale konfiguratie van paden: \texttt{TEMPLATE\_PATH} (lokale ballistix-tool-template repo), \texttt{DOCS\_PATH} (mcp-docs). \\
+    \hline
+    \texttt{src/resources/} &
+    Bevat \texttt{registerDocumentationResources.ts} die alle markdown-files uit \texttt{mcp-docs/rules/} als MCP-resources registreert. \\
+    \hline
+    \texttt{src/prompts/} &
+    Twee bestanden: \texttt{registerFillOverviewTablePrompt.ts}, \texttt{registerImplementOverviewFiltersPrompt.ts}. Deze registreren MCP-prompts met instructies. \\
+    \hline
+    \texttt{src/tools/} &
+    Vijf tool-bestanden: \texttt{createBallistixProject.ts}, \texttt{generateOverviewPage.ts}, \texttt{generateOverviewDropdownMenu.ts}, \texttt{generateDetailView.ts}, \texttt{commitProjectChanges.ts}. \\
+    \hline
+    \texttt{src/shared/} &
+    Helper-modules: \texttt{fs.ts} (file I/O), \texttt{naming.ts} (PascalCase/camelCase), \texttt{navigation.ts}, \texttt{postActions.ts}, \texttt{ballistixAgentShellCursorRule.ts}. \\
+    \hline
+    \texttt{package.json} &
+    Dependencies: \texttt{@modelcontextprotocol/sdk}, \texttt{zod} (schema validation). Scripts: \texttt{build}, \texttt{start}, \texttt{dev}. \\
+    \hline
+    \texttt{tsconfig.json} &
+    TypeScript-config: output naar \texttt{dist/}. \\
+    \hline
+    \texttt{dist/} &
+    Build-output; \texttt{dist/server.js} is het runtime-entrypoint. \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsection{Compilatie en opstart}
+
+\subsubsection{Build-process}
+
+De server wordt eerst gecompileerd van TypeScript naar JavaScript:
+
+\begin{minted}[fontsize=\small]{bash}
+$ yarn build
+# Equivalent: npx tsc
+# Output: src/** → dist/**
+\end{minted}
+
+TypeScript-compiler leest \texttt{tsconfig.json}, compileert alle \texttt{.ts}-files in \texttt{src/} en schrijft JavaScript-output naar \texttt{dist/}.
+
+\subsubsection{Server starten}
+
+Na compilatie wordt de server gestart:
+
+\begin{minted}[fontsize=\small]{bash}
+$ yarn start
+# Equivalent: node dist/server.js
+# Output: Server actief via stdio
+\end{minted}
+
+Wanneer de server actief is, luistert het naar stdin voor MCP-protocol-berichten en antwoordt via stdout. De server blijft in de achtergrond actief.
+
+\subsection{Integratie met Cursor Pro}
+
+\subsubsection{Cursor-configuratie}
+
+De MCP-server wordt geregistreerd in Cursor's globale configuratie bestand \texttt{\~/.cursor/config.json}:
+
+\begin{minted}[fontsize=\small]{json}
+{
+  "mcpServers": {
+    "ballistix-mcp": {
+      "command": "node",
+      "args": ["/Users/yanis/Documents/personal-repos/ballistix-mcp/dist/server.js"]
+    }
+  }
+}
+\end{minted}
+
+Hierin:
+
+\begin{itemize}
+  \item \texttt{ballistix-mcp} — de sleutel waaronder de server bekend is in Cursor.
+  \item \texttt{command} — ``\texttt{node}'' — het platform-command om het proces te starten.
+  \item \texttt{args} — het absolute pad naar \texttt{dist/server.js}.
+\end{itemize}
+
+Zodra Cursor deze configuratie laadt, is \texttt{ballistix-mcp} beschikbaar voor alle agent-operaties.
+
+\subsubsection{Agent-workflow in Cursor CLI}
+
+De gebruiker interageert via de Cursor command-line interface in agent-modus:
+
+\begin{enumerate}
+  \item \textbf{Terminal-commando:} Gebruiker opent een terminal en typt:
+    \begin{minted}[fontsize=\small]{bash}
+$ agent
+# Cursor CLI agent-modus gestart
+    \end{minted}
+    
+  \item \textbf{Model-selectie:} Cursor vraagt welk model gebruiken (bijv. Composer 2, Opus 4.7, GPT-5.5).
+  
+  \item \textbf{Natural-language plan:} Gebruiker geeft een \texttt{/plan}-instructie, bijv.:
+    \begin{quote}
+    \textit{``Maak een ballistix-project aan genaamd carwash-project. Het heeft 2 pagina's: klanten (tabel met 3 kolommen) en zeep-producten (tabel met 2 kolommen). Voeg mock-data toe. De tabelnamen zijn klikbaar en linken naar detail-pagina's. Beide tabellen hebben filters op naam; klanten hebben extra filter op stad.''}
+    \end{quote}
+    
+  \item \textbf{MCP-discovery:} Cursor leest de configuratie, ontdekt \texttt{ballistix-mcp}, en laadt alle beschikbare tools, prompts en resources in.
+  
+  \item \textbf{Planning:} Het LLM analyseert de instructie en bepaalt welke tools aan te roepen (bijv. \texttt{create-ballistix-project}, \texttt{generate-overview-page}, \texttt{generate-filters}).
+  
+  \item \textbf{Execution:} Cursor roept tools iteratief aan. Elke tool-aanroep:
+    \begin{itemize}
+      \item Valideert invoer (parameters).
+      \item Voert filesystem-operaties uit (file-schrijven, directory-kopieën).
+      \item Retourneert output (gegenereerde code, statusberichten).
+      \item Triggers optioneel \texttt{commit-project-changes} voor lint \& git commit.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Token-tracking en model-vergelijking}
+
+\subsubsection{Cursor Pro token-logging}
+
+Cursor Pro~\autocite{CursorProUsage2026} biedt ingebouwde token-tracking via het \texttt{token}-paneel in het CLI-interface. Voor elke tool-aanroep en resource-raadpleging worden tokens gerapporteerd:
+
+\begin{itemize}
+  \item \textbf{Input tokens} — tokens voor de instructie, resources en context.
+  \item \textbf{Output tokens} — tokens gegenereerd door het LLM.
+  \item \textbf{Total cost} — geschatte kostenper aanroep.
+\end{itemize}
+
+Dit token-tracking is essentieel voor evaluatie (Hoofdstuk~\ref{ch:resultaten}), omdat het kwantificerend aantoont hoe de hybride architectuur (templates + tools + resources) token-verbruik minimaliseert ten opzichte van de Unrestricted aanpak.
+
+\subsubsection{Model-variëteit}
+
+De PoC is getest met drie LLM-modellen:
+
+\begin{table}[htbp]
+  \centering
+  \caption{LLM-modellen gebruikt in PoC-evaluatie}
+  \label{tab:models}
+  \small
+  \begin{tabularx}{\textwidth}{|l|l|X|}
+    \hline
+    \textbf{Model} & \textbf{Provider} & \textbf{Karakteristieken / Opmerking} \\
+    \hline
+    Composer 2 & Google DeepMind & Geavanceerd multitask-model; goed voor code + planning. \\
+    \hline
+    Opus 4.7 & Anthropic & Claude-familie; sterke reasoning; betrouwbare code-generatie. \\
+    \hline
+    GPT-5.5 & OpenAI & Cutting-edge multimodaal model; maximale capaciteit. \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+De modelvergelijking gebeurt via dezelfde MCP-setup, zodat de enige variabele het LLM-model is. Dit stelt ons in staat effecten van model-choice op hallucinatie, token-verbruik en code-kwaliteit te isoleren (zie Evaluatie, Hoofdstuk~\ref{ch:resultaten}).
+
+\subsection{Samenvatting: Flow van code tot deployment}
+
+\begin{enumerate}
+  \item \textbf{Lokale development:} TypeScript-code in \texttt{src/} + markdown in \texttt{mcp-docs/rules/}.
+  \item \textbf{Build:} \texttt{yarn build} → TypeScript naar JavaScript in \texttt{dist/}.
+  \item \textbf{Server-registratie:} Pad naar \texttt{dist/server.js} in \texttt{\~/.cursor/config.json}.
+  \item \textbf{User-interactie:} Terminal \texttt{agent} → Natural language /plan → MCP-tool execution → Gegenereerd project.
+  \item \textbf{Evaluatie:} Token-tracking via Cursor Pro; model-vergelijking via dezelfde MCP-server met verschillende LLMs.
+\end{enumerate}
+
+Deze modulaire opzet zorgt ervoor dat wijzigingen aan tools, prompts of resources onmiddellijk beschikbaar zijn (na rebuild) voor alle Cursor-gebruikers, zonder dat de server handmatig opnieuw moet worden opgestart.
+
+\section{\IfLanguageName{dutch}{Tools \& Code Generation}{Tools \& Code Generation}}
+\label{sec:poc-tools}
+
+Deze sectie beschrijft hoe de vijf MCP-tools stap-voor-stap code genereren, met focus op hallucinatie-preventie via template-injectie en parametrische validatie. We presenteren drie representatieve tools in detail; de overige volgen hetzelfde patroon.
+
+\subsection{Tool 1: createBallistixProject — Template-kopie als basis}
+
+\subsubsection{Doel en workflow}
+
+De \texttt{create-ballistix-project}-tool initaliseert een nieuw Ballistix-project door het template-project recursief te kopiëren naar een nieuwe projectmap, een verse git-repository aan te maken, en een initiële commit uit te voeren. Dit voorkomt dat de LLM de folder-structuur, package-configuratie en boilerplate zelf moet genereren.
+
+\subsubsection{Volledige implementatie}
+
+\begin{minted}[fontsize=\small, linenos]{typescript}
+import { cp } from "node:fs/promises";
+import path from "node:path";
+
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+
+import { TEMPLATE_PATH } from "../config/paths.js";
+import { ensureBallistixAgentShellCursorRule } from "../shared/ballistixAgentShellCursorRule.js";
+import { exists } from "../shared/fs.js";
+import { runPostActions } from "../shared/postActions.js";
+
+export function registerCreateBallistixProjectTool(server: McpServer): void {
+  server.registerTool(
+    "create-ballistix-project",
+    {
+      title: "Create Ballistix project",
+      description:
+        "Kopieert het Ballistix templateproject naar een nieuwe projectmap, " +
+        "herinitialiseert een verse git repo en maakt een initial commit.",
+      inputSchema: {
+        projectName: z
+          .string()
+          .min(1)
+          .regex(/^[a-z0-9-]+$/, "Gebruik lowercase kebab-case, bv. my-project"),
+        commitMessage: z
+          .string()
+          .min(1)
+          .describe(
+            "Korte conventional commit message voor initial commit. " +
+            "De agent genereert deze zelf; vraag dit niet aan de eindgebruiker."
+          ),
+      },
+    },
+    async ({ projectName, commitMessage }) => {
+      const basePath = process.cwd();
+      const targetPath = path.join(basePath, projectName);
+
+      // Validatie: project mag niet al bestaan
+      if (await exists(targetPath)) {
+        return {
+          content: [
+            { type: "text", text: `Projectmap bestaat al: \${targetPath}` },
+          ],
+          structuredContent: {
+            success: false,
+            reason: "already-exists",
+            path: targetPath,
+          },
+          isError: true,
+        };
+      }
+
+      // Stap 1: Kopieër template-project recursief
+      await cp(TEMPLATE_PATH, targetPath, { recursive: true });
+
+      // Stap 2: Zorg ervoor dat Cursor-agent-shell-rule aanwezig is
+      await ensureBallistixAgentShellCursorRule(targetPath);
+
+      // Stap 3: Voer post-actions uit (git init, initial commit met lint:fix)
+      const postActions = await runPostActions({
+        projectPath: targetPath,
+        commitMessage,
+        mode: "init-commit",
+      });
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Ballistix-project '\${projectName}' aangemaakt in \${targetPath}`,
+          },
+        ],
+        structuredContent: {
+          success: true,
+          path: targetPath,
+          postActions,
+        },
+      };
+    }
+  );
+}
+\end{minted}
+
+\subsubsection{Hallucinatie-preventie}
+
+\begin{itemize}
+  \item \textbf{Zod-validatie:} Projectnaam moet lowercase kebab-case zijn (\texttt{my-project}, niet \texttt{MyProject}). Dit voorkomt naamgevingsfouten.
+  \item \textbf{Template-kopie:} In plaats van structuur te \textit{genereren}, kopieert dit tool een bestaande, gevalideerde template. Geen hallucinaties mogelijk over folder-layout.
+  \item \textbf{Post-actions flow:} Git-operaties en lint:fix worden centraal beheerd in \texttt{runPostActions}, niet ad-hoc gescript door de LLM.
+  \item \textbf{Exists-check:} Voorkomt per ongeluk bestaande projecten te overschrijven.
+\end{itemize}
+
+---
+
+\subsection{Tool 2: generateDetailView — Template-injectie met parametrische code}
+
+\subsubsection{Doel en workflow}
+
+De \texttt{generate-detail-view}-tool genereert een detail-pagina-component conform Ballistix-conventies. In plaats van volledige code te genereren, injecteert dit tool parameters in een ingebouwde template. Dit minimaliseert hallucinaties en garandeert dat output altijd de juiste hooks (\texttt{useRead}, \texttt{DataTableSection}) gebruikt.
+
+\subsubsection{Kern-implementatie (snippet)}
+
+\begin{minted}[fontsize=\small, linenos]{typescript}
+import path from "node:path";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+
+import { ensureBallistixAgentShellCursorRule } from "../shared/ballistixAgentShellCursorRule.js";
+import { exists, writeTextFile } from "../shared/fs.js";
+import { toPascalCase } from "../shared/naming.js";
+import { runPostActions } from "../shared/postActions.js";
+
+// Helper: parse embed-parameters (bv. "address,contact" → ["address", "contact"])
+function parseEmbed(embedCsv: string | undefined): string[] {
+  if (!embedCsv?.trim()) {
+    return [];
+  }
+  return embedCsv
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+// Kernel template builder: injecteert parameters in React component template
+function buildDetailSource(opts: {
+  detailViewPascalName: string;
+  routeParam: string;
+  entityTypeName: string;
+  importPathLiteral: string;
+  apiResourcePath: string;
+  queryKeyRoot: string;
+  embedJson: string;
+  i18nSlug: string;
+}): string {
+  const {
+    detailViewPascalName,
+    routeParam,
+    entityTypeName,
+    importPathLiteral,
+    apiResourcePath,
+    queryKeyRoot,
+    embedJson,
+    i18nSlug,
+  } = opts;
+
+  // Template met placeholders — geen vrije gegenereerde code
+  return `'use client';
+import type { \${entityTypeName} } from \${importPathLiteral};
+import { useParams } from 'next/navigation';
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import DataTableSection from 'components/Custom/DataTableSection';
+import type { TDataTableRow } from 'components/Custom/DataTableSection/DataTableSection';
+import { useRead } from 'hooks/useRead';
+import { styles } from '.';
+
+const \${detailViewPascalName} = () => {
+  const { t } = useTranslation();
+  const { \${routeParam} } = useParams<{ \${routeParam}: string }>();
+  
+  // Standard Ballistix hook: useRead (never custom fetch)
+  const { data: entity } = useRead<\${entityTypeName}>(
+    () => ({
+      url: `/\${apiResourcePath}/\$\{$\{routeParam\}\}`,
+      keys: ['\${queryKeyRoot}', String(\${routeParam})],
+      embed: \${embedJson},
+    }),
+    [\${routeParam}],
+  );
+
+  // Memoized summary rows (standard DataTableSection format)
+  const { summaryRows } = useMemo<{ summaryRows: TDataTableRow[] }>(
+    () => {
+      if (!entity) {
+        return { summaryRows: [] as TDataTableRow[] };
+      }
+      return {
+        summaryRows: [
+          [
+            {
+              label: t('view.\${i18nSlug}.section.summary.idLabel'),
+              value: String((entity as { id?: unknown }).id ?? ''),
+            },
+          ],
+        ],
+      };
+    },
+    [entity, t]
+  );
+
+  if (!entity) return null;
+
+  return (
+    <div className={styles.detailContainer}>
+      <DataTableSection title="Summary" rows={summaryRows} />
+    </div>
+  );
+};
+
+export default \${detailViewPascalName};
+`;}
+\end{minted}
+
+\noindent
+(Voor volledige tool-registratie zie Appendix~\ref{app:full-generate-detail-view})
+
+\subsubsection{Hallucinatie-preventie}
+
+\begin{itemize}
+  \item \textbf{Template-matrix:} Code is ingebouwd; LLM injecteert enkel parameters (\texttt{entityTypeName}, \texttt{routeParam}, \texttt{embedJson}).
+  \item \textbf{Standaard hooks:} Altijd \texttt{useRead}, nooit custom fetch()-calls. DataTableSection wordt altijd gebruikt.
+  \item \textbf{Type-safety:} Zod-validatie van inputs erzorgt dat routeParam, entityTypeName valide TypeScript-identificators zijn.
+  \item \textbf{i18n en query-keys:} Volgen een vaste namingconventie (bv. \texttt{view.\{i18nSlug\}.section.summary}) — geen vrije i18n-sleutels.
+  \item \textbf{Embed-parsing:} CSV-string wordt geparseerd en gevalideerd; output: JSON-string in template.
+\end{itemize}
+
+Deze aanpak garandeert dat zelfs als de LLM \textit{wil} hallucineren over custom fetches of andere hooks, de template dit simpelweg niet toestaat.
+
+---
+
+\subsection{Tool 3: registerFillOverviewTablePrompt — MCP-prompt met structured instructions}
+
+\subsubsection{Doel en workflow}
+
+Prompts in MCP zijn niet-imperatieve richtlijnen die de LLM geven hoe bepaalde taken uit te voeren zonder die taken als tool in te kaderen. \texttt{fill-overview-table} is een MCP-prompt die instruceert hoe een overview-pagina in te vullen conform Ballistix-rules.
+
+\subsubsection{Implementatie (snippet)}
+
+\begin{minted}[fontsize=\footnotesize, linenos]{typescript}
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+
+export function registerFillOverviewTablePrompt(server: McpServer): void {
+  server.registerPrompt(
+    "fill-overview-table",
+    {
+      title: "Fill overview with table",
+      description:
+        "Vult een overview partial in met een TableList en mock data " +
+        "volgens de Ballistix-rules. Code en identifiers blijven Engels.",
+      argsSchema: {
+        projectName: z.string(),
+        pageName: z.string(),
+        targetFile: z.string(),
+      },
+    },
+    ({ projectName, pageName, targetFile }) => ({
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: \`
+Gebruik de Ballistix documentatie-resources voor overview pages, TableList en
+table-list-actions voor actiekolomin (display + dropdown partial).
+Lees ook resource ballistix-docs://rules/agent-shell: geen yarn build/dev;
+na wijziging volstaat commit-project-changes (lint:fix).
+
+TAAL-REGEL:
+- Plan/vraag mag Nederlands zijn.
+- ALLE CODE: namen, types, kolomheaders, route-paden: **ENGELS**.
+  Bv. user input "klanten" → code entity "customers".
+
+TAAK:
+- Vul \${targetFile} in voor page "\${pageName}" in project "\${projectName}".
+- Gebruik TableList volgens regels.
+- **Filters**: nooit in primaryActions → alleen secondaryActions.
+  Gebruik bestaande *OverviewFilters-partial; breid uit i.p.v. inline.
+- Gebruik mock data (niet backend queries).
+- Wijzig gén ander bestand, behalve *OverviewFilters partial.
+- Zorg voor naming/imports Ballistix-conform.
+- STOP na deze éne wijziging.
+
+AFSLUIT-STAP:
+- Roep tool 'commit-project-changes' aan met bv.
+  "feat(\${pageName}): add overview table with mock data".
+- Genereer commit message zelf; vraag niet aan eindgebruiker.
+            `,
+          },
+        },
+      ],
+    })
+  );
+}
+\end{minted}
+
+\noindent
+(Voor volledige prompt-registratie zie Appendix~\ref{app:full-prompts})
+
+\subsubsection{Hallucinatie-preventie via instructies}
+
+\begin{itemize}
+  \item \textbf{Expliciete constraints:} ``Filters nooit in primaryActions'' wordt herhaal om hallucinaties (``ik zet alles in primaryActions'') tegen te gaan.
+  \item \textbf{Language-to-code mapping:} Nederlandse invoer (``klanten'') → Engelse code (``customers'') wordt expliciet gesteld.
+  \item \textbf{Resource-references:} Prompt verwijst naar MCP-resources (\texttt{ballistix-docs://rules/overview-pages}) zodat LLM context kan raadplegen.
+  \item \textbf{Single-action boundary:} ``STOP na deze éne wijziging'' voorkomt scope-creep en off-the-rails hallucinations.
+  \item \textbf{Commit-instruction:} De tool \texttt{commit-project-changes} moet zelf aangeroepen worden; dit voorkomt dat LLM vergeet te committen.
+\end{itemize}
+
+---
+
+\subsection{Gelaagde hallucinatie-preventie}
+
+De drie tools hierboven implementeren een consistent anti-hallucinatie-patroon:
+
+\begin{table}[htbp]
+  \centering
+  \caption{Hallucinatie-preventie per laag}
+  \label{tab:hallucination-prevention}
+  \small
+  \begin{tabularx}{\textwidth}{|l|l|l|}
+    \hline
+    \textbf{Laag} & \textbf{Mechanisme} & \textbf{Voorbeeld} \\
+    \hline
+    \textbf{Resources} (regels) &
+    Markdown-dokumenten vastleggen gedragsregels &
+    \texttt{overview-page-rules.md}: ``filters in secondaryActions'' \\
+    \hline
+    \textbf{Prompts} (richtlijnen) &
+    MCP-prompts herhalen constraints en geven context &
+    \texttt{fill-overview-table}: ``Filters nooit in primaryActions'' \\
+    \hline
+    \textbf{Tools} (code) &
+    Ingebouwde templates + parameter-injectie &
+    \texttt{generateDetailView}: template met useRead, geen custom fetch \\
+    \hline
+    \textbf{Validatie} (input-checks) &
+    Zod-schema's valideren names, enums, formats &
+    \texttt{projectName}: lowercase kebab-case only \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+Deze gelaagde aanpak zorgt ervoor dat hallucinaties langs meerdere wegen tegengegaan worden: zelfs als één laag faalt (bijv. LLM negeert prompt), de volgende laag (template-injectie in tool) biedt nog steeds bescherming.
+
+\subsection{Token-verbruik: Template-injectie vs. vrije generatie}
+
+Een kwantitatieve voordeel van deze architectuur wordt zichtbaar in token-tracking:
+
+\begin{itemize}
+  \item \textbf{Unrestricted aanpak:} LLM moet hele React-componenten genereren (100-200 tokens per component).
+  \item \textbf{Template-injectie:} LLM injecteert parameters in template (20-50 tokens per call).
+\end{itemize}
+
+Deze besparing wordt gemeten in Hoofdstuk~\ref{ch:resultaten} via Cursor Pro token-logging~\autocite{CursorTokenTracking2025}.
+
+\section{\IfLanguageName{dutch}{Resources \& Prompts: Gestructureerde Documentatie}{Resources \& Prompts: Structured Documentation}}
+\label{sec:poc-resources}
+
+\subsection{Rol van resources in de MCP-architectuur}
+
+Resources zijn niet-code-genererende MCP-providers die markdown-documentatie serveren als structured context. In tegenstelling tot tools (die imperatief code schrijven), bieden resources declaratieve, regelgebaseerde richtlijnen. Het LLM raadpleegt deze voortdurend bij het plannen van tool-aanroepen, wat hallucinaties minimaliseert door normen in te stellen voordat generatie begint.
+
+\subsubsection{Resource-discovery en koppeling}
+
+De MCP-server registreert zes documentatie-resources met unieke URI's (\texttt{ballistix-docs://rules/<slug>}). Hoe het LLM deze ontdekt:
+
+\begin{itemize}
+  \item \textbf{Niet volledig automatisch:} MCP-clients tonen resource-metadata (naam, titel, beschrijving). De agent kiest op basis van taak, metadata en gewoonte om docs te raadplegen.
+  \item \textbf{Praktisch:} Resources worden expliciet gerefereerd via URI's (bv. ``lees \texttt{ballistix-docs://rules/overview-pages}'') in prompts en tool-descriptions.
+  \item \textbf{Context-injection:} Ballistix-projecten bevatten ook \texttt{.cursor/rules/ballistix-agent-shell.mdc} — een Cursor-specifiek agent-ruleset — zodat shell-gedrag standaard in de context zit.
+\end{itemize}
+
+\subsection{De zes dokumentatie-resources}
+
+\subsubsection{1. detail-views-rules}
+
+\noindent
+\textbf{URI:} \texttt{ballistix-docs://rules/detail-views} \newline
+\textbf{Doel:} Vastleggen hoe detail-pagina's gebouwd worden.
+
+\noindent
+\textbf{Kernpunten:}
+
+\begin{itemize}
+  \item \textbf{Geen `*Overview`-naam:} Detail-pagina's krijgen een naam naar hun doel (bv. \texttt{CustomerInfo}, \texttt{DossierInfo}), niet \texttt{CustomerOverview}.
+  \item \textbf{Data-fetching:} Altijd \texttt{useParams} voor route-ID; hook \texttt{useRead} met juiste \texttt{url}, \texttt{keys}, \texttt{embed} (voor related data); nooit custom \texttt{fetch()}.
+  \item \textbf{Layout:} \texttt{DataTableSection} voor label-waarde-rijen, opgebouwd in \texttt{useMemo}. Voor bewerken: aparte \texttt{*MutateView} in \texttt{ModalOverlay}, niet hetzelfde scherm.
+\end{itemize}
+
+\subsubsection{2. overview-pages-rules}
+
+\noindent
+\textbf{URI:} \texttt{ballistix-docs://rules/overview-pages} \newline
+\textbf{Doel:} Structuur van overzicht-pagina's.
+
+\noindent
+\textbf{Kernpunten:}
+
+\begin{itemize}
+  \item \textbf{Component-hiërarchie:} \texttt{*View} bevat \texttt{HeaderContainer} (icon, breadcrumbs) en één kind: \texttt{*Overview}. Geen verplichte \texttt{*OverviewHeader}, geen extra wrappers.
+  \item \textbf{Taal-regel:} Briefing mag Nederlands; alle code (componentnamen, route-paden, keys, identifiers) is Engels. Routes: kebab-case meervoud (``customers''), componenten: PascalCase (\texttt{CustomersOverview}).
+  \item \textbf{Integratielaag:} \texttt{*Overview} haalt \texttt{TableList} (niet eigen \texttt{<table>}); filters via \texttt{secondaryActions}, niet als sibling boven de tabel; pagina-entry in \texttt{navigation.ts}.
+\end{itemize}
+
+\subsubsection{3. table-list-rules}
+
+\noindent
+\textbf{URI:} \texttt{ballistix-docs://rules/table-list} \newline
+\textbf{Doel:} API en best practices van \texttt{TableList}-component.
+
+\noindent
+\textbf{Kernpunten:}
+
+\begin{itemize}
+  \item \textbf{Source:} \texttt{TableList} altijd uit wrapper \texttt{components/List/Table/TableList}, nooit rechtstreeks uit \texttt{@ballistix.digital/react-components}.
+  \item \textbf{Verplichte props:} unieke \texttt{id}, \texttt{table} (kolommen + data), \texttt{page}, \texttt{onPaginate}.
+  \item \textbf{Toolbar-slots:} \texttt{primaryActions} = pagina-acties (nieuw, bulk); \texttt{secondaryActions} = filters; \texttt{customControls} alleen voor extras. Altijd \texttt{useMemo} rond kolommen/data.
+\end{itemize}
+
+\subsubsection{4. overview-filters-rules}
+
+\noindent
+\textbf{URI:} \texttt{ballistix-docs://rules/overview-filters} \newline
+\textbf{Doel:} Hoe filter-UI architecten en mounten.
+
+\noindent
+\textbf{Kernpunten:}
+
+\begin{itemize}
+  \item \textbf{Placement:} Filter-UI \textbf{uitsluitend} in \texttt{TableList} → prop \texttt{secondaryActions} (render-prop). Nooit in \texttt{primaryActions}, nooit als sibling boven de tabel.
+  \item \textbf{Mounting:} In \texttt{*Overview}: \texttt{secondaryActions=\{() => <CustomersOverviewFilters … />\}}, met callbacks (\texttt{setQuery}, paginering) uit \texttt{*Overview} → filter-partial.
+  \item \textbf{Implementation:} Stack typisch: \texttt{useForm} / \texttt{useValidation}, \texttt{QueryFilterForm}, \texttt{SelectFilterForm}. Mock: client-side filter + \texttt{// TODO} voor API. Placeholders via \texttt{t('component.form.placeholder.<FIELD>')}, geen harde zinnen.
+\end{itemize}
+
+\subsubsection{5. table-list-actions-rules}
+
+\noindent
+\textbf{URI:} \texttt{ballistix-docs://rules/table-list-actions} \newline
+\textbf{Doel:} Onderscheid tussen pagina-acties en rij-acties.
+
+\noindent
+\textbf{Kernpunten:}
+
+\begin{itemize}
+  \item \textbf{Pagina-acties (\texttt{primaryActions}):} Toolbar-knoppen (``nieuw record'', export). \textbf{Nooit} per-rij delete/details, \textbf{nooit} filters.
+  \item \textbf{Rij-acties:} Eigen kolom (id \texttt{actions}) met \texttt{display} uit \texttt{createColumnHelper}; cell rendert een partial \texttt{partials/<Domain>DropdownMenu.tsx} (zelfde map als \texttt{*Overview}), met volledige entity op rij.
+\end{itemize}
+
+\subsubsection{6. agent-shell-workflow-rules}
+
+\noindent
+\textbf{URI:} \texttt{ballistix-docs://rules/agent-shell} \newline
+\textbf{Doel:} Terminal- en build-gedrag tijdens MCP-iteratie.
+
+\noindent
+\textbf{Kernpunten:}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Agent-shell workflow: wat NIET vs. wat WEL}
+  \label{tab:agent-shell-rules}
+  \small
+  \begin{tabularx}{\textwidth}{|l|l|}
+    \hline
+    \textbf{NIET (standaard MCP-werk)} & \textbf{WEL} \\
+    \hline
+    \texttt{yarn build} als routine-verificatie & Types/code kloppend + TS-diagnostiek in editor \\
+    \hline
+    \texttt{yarn dev} / \texttt{npm run dev} starten + \texttt{sleep/tail} logs & Dev-server laat gebruiker starten (indien nodig) \\
+    \hline
+    Na \texttt{commit-project-changes} extra \texttt{yarn build/dev} & \texttt{commit-project-changes} = volledige verificatie \\
+    \hline
+    Poller-loops (\texttt{sleep} + log lezen) & Geen terminal-polling \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\noindent
+\textbf{Uitzondering:} Alleen als gebruiker expliciet \texttt{yarn build/dev} vraagt — dan als shell-commando, zonder sleep/tail-rondjes.
+
+\textbf{Cursor-integratie:} MCP-resources worden niet automatisch elke turn gemerged. Daarom krijgt elk project \texttt{.cursor/rules/ballistix-agent-shell.mdc} (geschreven bij \texttt{create-ballistix-project}, \texttt{generate-overview-page}, \texttt{commit-project-changes}), zodat shell-regels standaard in agent-context zitten.
+
+---
+
+\subsection{De twee MCP-prompts}
+
+Naast resources registreert de MCP-server twee prompts — non-imperatieve richtlijnen die stap-voor-stap instructies geven.
+
+\subsubsection{Prompt 1: fill-overview-table}
+
+\noindent
+\textbf{URI:} \texttt{fill-overview-table} \newline
+\textbf{Doel:} Overzicht-pagina inzetten met TableList en mock data.
+
+\noindent
+(Voor volledige tekst zie Sectie~\ref{sec:poc-tools}, Tool 3; core constraints:)
+
+\begin{itemize}
+  \item Taal: Nederlands mag in input, code/identifiers Engels.
+  \item Filters: altijd \texttt{secondaryActions}, nooit \texttt{primaryActions}.
+  \item Mock data gebruiken.
+  \item Wijzig gén ander bestand behalve optioneel \texttt{*OverviewFilters}.
+  \item Roep \texttt{commit-project-changes} aan met conventional commit.
+\end{itemize}
+
+\subsubsection{Prompt 2: implement-overview-filters}
+
+\noindent
+\textbf{URI:} \texttt{implement-overview-filters} \newline
+\textbf{Doel:} Filter-UI toevoegen aan bestaande overview.
+
+\noindent
+\textbf{Kernstappen en constraints:}
+
+\begin{itemize}
+  \item Lees resources: \texttt{ballistix-docs://rules/overview-filters}, \texttt{table-list-rules}.
+  \item \textbf{Ingen eigenaardigheid:} Filters gaan in \texttt{secondaryActions} render-prop, niet als wrapper of toolbar-item.
+  \item Maak of breid \texttt{*OverviewFilters}-partial uit in \texttt{partials/}; zet state in parent \texttt{*Overview}.
+  \item Ondersteuning: \texttt{useForm}, \texttt{QueryFilterForm}, \texttt{SelectFilterForm} per filter-spec.
+  \item Mock: client-side filtering; leave \texttt{// TODO} voor backend-query.
+  \item Wijzig gén andere bestanden.
+  \item Roep \texttt{commit-project-changes} aan.
+\end{itemize}
+
+---
+
+\subsection{Hoe resources hallucinaties tegengaan}
+
+Resources werken samen met tools en validatie in een defensieve laag-structuur:
+
+\begin{table}[htbp]
+  \centering
+  \caption{Hallucinatie-preventie: resources vs. tools vs. validatie}
+  \label{tab:resource-tool-defense}
+  \small
+  \begin{tabularx}{\textwidth}{|l|l|X|}
+    \hline
+    \textbf{Laag} & \textbf{Trigger} & \textbf{Voorbeeld: filters in secundaire acties} \\
+    \hline
+    Resources (regels) &
+    Resource-reading & Agent leest \texttt{overview-filters-rules}: ``filters nooit in primaryActions'' \\
+    \hline
+    Prompts (richtlijnen) &
+    Tool-preparation & \texttt{fill-overview-table}-prompt herhaalt: ``Filters in secondaryActions'' \\
+    \hline
+    Tools (code) &
+    Tool-execution & \texttt{generate-overview} registreert scaffold-template met \texttt{secondaryActions} hook \\
+    \hline
+    Validatie (input) &
+    Pre-tool & Zod-schema's valideren filter-spec-object; structuur erzwingt \texttt{secondaryActions}-mounting \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+Zelfs als één laag faalt (bijv. agent negeert prompt), volgende laag biedt noch bescherming.
+
+---
+
+\subsection{Meest voorkomende hallucinaties en preventie}
+
+Hoewel bronnen geen harde statistiek geven, herkennen we volgende risico-patronen:
+
+\begin{itemize}
+  \item \textbf{Verkeerde \texttt{TableList}-import:} Agent importeert rechtstreeks uit \texttt{@ballistix.digital/react-components} i.p.v. wrapper.
+    \newline\textit{Preventie:} \texttt{table-list-rules} expliciet: ``altijd uit wrapper''.
+  
+  \item \textbf{Filters buiten \texttt{secondaryActions}:} Agent zet filters in \texttt{primaryActions} of als sibling boven tabel.
+    \newline\textit{Preventie:} \texttt{overview-filters-rules} + \texttt{fill-overview-table}-prompt herhaal constraint; tool-template \textit{forceert} \texttt{secondaryActions} structuur.
+  
+  \item \textbf{Eigen \texttt{<table>} i.p.v. \texttt{TableList}:} Agent maakt custom HTML-tabel.
+    \newline\textit{Preventie:} \texttt{table-list-rules} + context-injectie via resource forceert re-use.
+  
+  \item \textbf{Terminal-commando's (\texttt{yarn build/dev}) tijdens MCP-iteratie:} Agent voert builds uit alsof \textit{verificatie} nodig is.
+    \newline\textit{Preventie:} \texttt{agent-shell-workflow} en \texttt{.cursor/rules/ballistix-agent-shell.mdc} verbieden dit strak.
+  
+  \item \textbf{Rij-acties in \texttt{primaryActions}:} Agent zet delete/details in toolbar i.p.v. actions-kolom.
+    \newline\textit{Preventie:} \texttt{table-list-actions-rules} specificeert: ``rij-acties = actions-kolom''.
+\end{itemize}
+
+---
+
+\subsection{Integratie: hoe resources in praktijk werken}
+
+Een typische flow:
+
+\begin{enumerate}
+  \item \textbf{Agent ontvangt plan:} ``Maak overview-pagina klanten met tabel, filters op naam en stad.''
+  
+  \item \textbf{Resource-raadpleging:} Agent laadt automatisch relevante resources:
+    \begin{itemize}
+      \item \texttt{overview-pages-rules} (structuur)
+      \item \texttt{table-list-rules} (TableList API)
+      \item \texttt{overview-filters-rules} (filter-mounting)
+      \item \texttt{agent-shell-workflow} (terminal-policy)
+    \end{itemize}
+  
+  \item \textbf{Tool-keuze:} Agent bepaalt: \texttt{generate-overview-page} + \texttt{generate-filters} nodig.
+  
+  \item \textbf{Tool-aanroep 1:} \texttt{generate-overview-page(\{pageName: 'customers', entityName: 'Customer', columns: […]\})}
+    \begin{itemize}
+      \item Tool genereert scaffold conform template.
+      \item Template injecteert \texttt{secondaryActions} hook (geforceerd structuur).
+    \end{itemize}
+  
+  \item \textbf{Tool-aanroep 2:} \texttt{generate-filters(\{projectName, pageName, filterSpecs: […]\})}
+    \begin{itemize}
+      \item Genereert \texttt{*OverviewFilters}-partial.
+      \item Mounting: \texttt{secondaryActions=\{() => <CustomersOverviewFilters … />\}}.
+    \end{itemize}
+  
+  \item \textbf{Commit:} Agent roept \texttt{commit-project-changes} aan (lint:fix, git commit).
+    \begin{itemize}
+      \item Geen \texttt{yarn build/dev} — agent weet dit van \texttt{agent-shell-workflow}.
+    \end{itemize}
+\end{enumerate}
+
+Elke stap wordt geleid door resources; hallucinaties worden vroegtijdig vastgesteld of voorkomen.
+
+\section{\IfLanguageName{dutch}{Template-project \& Boilerplate}{Template Project \& Boilerplate}}
+\label{sec:poc-template}
+
+\subsection{Rol van het template-project}
+
+Het template-project (\texttt{ballistix-tool-template}) is een pre-geconfigureerde, volledig werkende Next.js/React-applicatie die als \textit{copy-modify}-basis dient voor elk nieuw Ballistix-project. Het doel: verwijder de noodzaak om project-setup zelf te genereren; het LLM hoeft slechts incrementeel aan te passen.
+
+Dit template:
+\begin{itemize}
+  \item Biedt complete tooling-configuratie (TypeScript, ESLint, Tailwind, i18n).
+  \item Bevat concrete UI-componenten als voorbeeld (niet leeg).
+  \item Stelt routing (Next App Router) en internationalisatie (i18next) in.
+  \item Is onafhankelijk — elk gegenereerd project houdt eigen git-history.
+\end{itemize}
+
+\subsection{Mapstructuur}
+
+De template volgt deze globale structuur (diepte ~3):
+
+\begin{minted}[fontsize=\small]{text}
+ballistix-tool-template/
+├── eslint.config.mjs              # Flat ESLint config
+├── next.config.ts                 # Next.js config + redirects
+├── package.json                   # Dependencies, scripts
+├── postcss.config.mjs             # Tailwind v4 entry
+├── prettier.config.mjs
+├── project-info.md
+├── project-overzicht.md           # File inventory
+├── tsconfig.json
+├── .gitignore
+├── .yarnrc.yml
+│
+├── specs/                         # Project guidelines
+│   ├── README.md
+│   ├── architecture.md
+│   ├── code-style.md
+│   ├── components.md
+│   ├── naming-conventions.md
+│   └── routes.md
+│
+└── src/
+    ├── app/
+    │   └── [lang]/
+    │       ├── layout.tsx
+    │       └── page.ts
+    ├── assets/
+    │   ├── fonts/chivo/*.ttf
+    │   └── images/logo.svg
+    ├── components/
+    │   ├── Custom/…
+    │   ├── Data/…
+    │   ├── Element/…
+    │   ├── Form/…
+    │   ├── Layout/…
+    │   ├── List/…
+    │   ├── Modal/…
+    │   ├── Navigation/…
+    │   ├── Overlay/…
+    │   └── Section/…
+    ├── config/
+    │   ├── locale.ts
+    │   └── navigation.ts
+    ├── context/
+    ├── dictionaries/
+    │   ├── fr.json
+    │   └── nl.json
+    ├── enums/
+    ├── helpers/
+    ├── hooks/
+    ├── styles/
+    │   └── globals.css
+    ├── types/
+    └── views/
+        ├── Home/
+        └── app/
+            ├── Root/
+            └── Shell/
+                └── partials/LayoutShell/…
+\end{minted}
+
+\subsubsection{Kernboilerplate vs. per-project aanpassingen}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Template-inhoud: herbruikbaar vs. per-project}
+  \label{tab:template-structure}
+  \small
+  \begin{tabularx}{\textwidth}{|l|l|l|}
+    \hline
+    \textbf{Map / Bestand} & \textbf{Rol} & \textbf{Status} \\
+    \hline
+    \texttt{src/app/[lang]/} &
+    Next App Router + locale-segment &
+    Kernboilerplate \\
+    \hline
+    \texttt{src/components/**} &
+    UI-bouwstenen (concrete voorbeelden) &
+    Kernboilerplate \\
+    \hline
+    \texttt{src/views/**} &
+    Pagina-views, app-shell &
+    Kernboilerplate (kan uitgebreid) \\
+    \hline
+    \texttt{src/config/, context/, hooks/, helpers/, types/, styles/} &
+    Utilities, types, styling &
+    Kernboilerplate \\
+    \hline
+    \texttt{specs/} &
+    Projectrichtlijnen (documentatie) &
+    Kernboilerplate \\
+    \hline
+    \texttt{src/config/navigation.ts} &
+    Navigatie-tabs en redirects &
+    \textbf{PER PROJECT}: \texttt{mainNavigationTabs} is leeg; tool vult dit in \\
+    \hline
+    \texttt{src/app/[lang]/…} (routes) &
+    Pagina-routes &
+    \textbf{PER PROJECT}: nieuwe routes toegevoegd \\
+    \hline
+    \texttt{src/dictionaries/*.json} &
+    Vertalingen &
+    \textbf{PER PROJECT}: uitgebreid per taal \\
+    \hline
+    \texttt{package.json} name &
+    Project-naam &
+    \textbf{PER PROJECT}: vervangen \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsection{Kerndependencies}
+
+\subsubsection{Framework en styling}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Kernafhankelijkheden van het template}
+  \label{tab:template-deps}
+  \small
+  \begin{tabularx}{\textwidth}{|l|l|X|}
+    \hline
+    \textbf{Domein} & \textbf{Packages} & \textbf{Versie} \\
+    \hline
+    Next.js / React &
+    \texttt{next}, \texttt{react}, \texttt{react-dom} &
+    next \textbf{16.2.2}, react/react-dom \textbf{19.2.3} \\
+    \hline
+    Ballistix UI &
+    \texttt{@ballistix.digital/react-components} &
+    \textbf{\textasciicircum 9.4.0} \\
+    \hline
+    Styling &
+    \texttt{tailwindcss}, \texttt{@tailwindcss/postcss}, \texttt{@tailwindcss/forms} &
+    tailwindcss \textbf{\textasciicircum 4} \\
+    \hline
+    i18n &
+    \texttt{i18next}, \texttt{react-i18next} &
+    Standard versions \\
+    \hline
+    Data \& Forms &
+    \texttt{@tanstack/react-query}, \texttt{formik}, \texttt{yup} &
+    React Query + devtools \\
+    \hline
+    HTTP & \texttt{axios}, \texttt{ky} & — \\
+    \hline
+    Utility &
+    \texttt{lodash}, \texttt{luxon}, \texttt{@casl/ability} &
+    — \\
+    \hline
+    Monitoring &
+    Datadog browser SDK &
+    (optional) \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\noindent
+\textbf{Opmerking:} Template gebruikt **Formik + Yup** (niet Zod) voor formuliervalidatie.
+
+\subsubsection{Build-scripts}
+
+\begin{minted}[fontsize=\small]{json}
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "yarn lint && next build",
+    "build:all-ts-errors": "SHOW_TS_ERRORS=true next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "update:components": "yarn add @ballistix.digital/react-components@latest",
+    "update:lint": "yarn add eslint-config-ballistix@latest"
+  }
+}
+\end{minted}
+
+\subsection{Kernkonfiguraties}
+
+\subsubsection{TypeScript (tsconfig.json)}
+
+\begin{itemize}
+  \item \textbf{Strict mode:} \texttt{strict: true}, \texttt{noUnusedLocals}, \texttt{noUnusedParameters}.
+  \item \textbf{Path aliasing:} \texttt{paths: \{ "*": ["./src/*"] \}} — importeren als \texttt{import \{ … \} from "components/Custom"} in plaats van \texttt{"../../../components"}.
+  \item \textbf{Module resolution:} \texttt{moduleResolution: "bundler"} voor Next.js.
+  \item \textbf{Next plugin:} TypeScript Next.js plugin actief.
+\end{itemize}
+
+\subsubsection{Next.js (next.config.ts)}
+
+\begin{minted}[fontsize=\small]{typescript}
+export default {
+  typedRoutes: true,                  // Type-safe route strings
+  images: {
+    remotePatterns: [                 // Allow TailwindUI, etc.
+      { hostname: "tailwindui.com" }
+    ]
+  },
+  experimental: {
+    optimizePackageImports: [...]     // Tree-shaking optimized imports
+  },
+  redirects: async () =>
+    buildNavigationRedirects()        // Dynamic redirects from navigation.ts
+};
+\end{minted}
+
+\subsubsection{Tailwind v4 (postcss.config.mjs + globals.css)}
+
+Template gebruikt **Tailwind v4** met `@tailwindcss/postcss`:
+
+\begin{minted}[fontsize=\small]{css}
+/* src/styles/globals.css */
+@import 'tailwindcss';
+@theme {
+  --color-primary: #1e40af;
+  --color-secondary: #f59e0b;
+  /* ... */
+}
+@source '../components/**/*.tsx' './src/views/**/*.tsx';
+\end{minted}
+
+\noindent
+Geen aparte \texttt{tailwind.config.ts} — config gebeurt in CSS via \texttt{@theme}.
+
+\subsubsection{ESLint (eslint.config.mjs)}
+
+\begin{itemize}
+  \item \textbf{Flat config:} \texttt{eslint-config-ballistix} uitgebreid.
+  \item \textbf{Extra regels:} \texttt{no-restricted-imports} voor \texttt{@casl/react} \texttt{Can} component.
+  \item \textbf{Geen} klassieke \texttt{.eslintrc} — flat config is standard.
+\end{itemize}
+
+\subsection{Internationalisatie (i18n)}
+
+\subsubsection{Taalconfiguratie}
+
+\begin{itemize}
+  \item \textbf{Ondersteunde talen:} **Nederlands (nl)**, **Frans (fr)**, **Engels (en)** (resource desgewenst toevoegen).
+  \item \textbf{Vertalingbestanden:} \texttt{src/dictionaries/nl.json}, \texttt{fr.json}.
+  \item \textbf{Locale-config:} \texttt{src/config/locale.ts} definieert taallijst en default-taal.
+  \item \textbf{Binding:} i18next sync't via localStorage \& URL-segment \texttt{[lang]}.
+\end{itemize}
+
+\subsubsection{Navigation en routing}
+
+\begin{minted}[fontsize=\small]{typescript}
+// src/config/navigation.ts
+export type TNavigationTab = { key: string; label: string; };
+export const mainNavigationTabs: TNavigationTab[] = [];  // LEEG
+
+export function buildNavigationRedirects() {
+  return [
+    {
+      source: '/',
+      destination: `/${defaultLocale}${
+        mainNavigationTabs[0]?.key || '/'
+      }`,
+      permanent: false
+    }
+  ];
+}
+\end{minted}
+
+\noindent
+Per project: \texttt{mainNavigationTabs} wordt ingevuld met pagina-entries. Redirects dynamisch opgebouwd via \texttt{buildNavigationRedirects()}.
+
+\subsection{Copy-modify workflow}
+
+\subsubsection{Waarom copy-modify en niet symlinks?}
+
+\begin{itemize}
+  \item \textbf{Isolatie:} Elk gegenereerd project heeft onafhankelijke codebase; geen gedeelde build-context.
+  \item \textbf{Git-history:} Elk project houdt eigen commit-history; niet gekoppeld aan template.
+  \item \textbf{Divergence:} Projecten kunnen afwijken van template zonder breaking changes elders.
+  \item \textbf{Performance:} Symlinks kunnen fragiel zijn op CI/CD en Windows; recursief kopieën is robust.
+\end{itemize}
+
+\subsubsection{Template-updates}
+
+*(Geen gestandaardiseerde workflow in repo; volgende punten zijn aanbevelingen.)*
+
+\begin{itemize}
+  \item \textbf{Centralisatie:} Template wordt onderhouden in centrale repo/branch.
+  \item \textbf{Propagatie:} Wijzigingen: handmatig cherry-picken/mergen naar bestaande projecten, of periodieke ``sync-PR''.
+  \item \textbf{Geen automatische propagatie:} Updates zijn opt-in per project (voorkomen onvoorziene breaking changes).
+\end{itemize}
+
+\subsection{Template-inhoud: kernboilerplate}
+
+\subsubsection{Voorbeeldcomponenten}
+
+Template bevat **geen lege placeholder-mappen**; \texttt{src/components/**} en \texttt{src/hooks/} bevatten al veel concrete modules:
+
+\begin{itemize}
+  \item \texttt{components/Custom/} — Custom wrappers rond Ballistix-componenten.
+  \item \texttt{components/Data/} — Data-presentatie (cards, tables, sections).
+  \item \texttt{components/Form/} — Formulier-velden en helpers.
+  \item \texttt{components/Layout/} — Layout-containers (header, sidebar, main).
+  \item \texttt{components/List/} — Tabel- en lijstcomponenten.
+  \item \texttt{components/Modal/} — Modalen en overlays.
+  \item \texttt{components/Navigation/} — Navigatie-elementen.
+\end{itemize}
+
+Dit biedt het LLM concrete voorbeelden om van te erven; niet als lege scaffold.
+
+\subsubsection{ApplicationShell en LanguageProvider}
+
+\begin{itemize}
+  \item \textbf{ApplicationShell:} Initialiseert i18next, LanguageProvider, NotificationContext.
+  \item \textbf{LanguageProvider:} Synct taal-state met localStorage \& URL.
+  \item \textbf{Locale-setup:} `locale.ts` defineert taallijst; init-resource is **nl** en **fr** (Engels desgewenst toevoegen).
+\end{itemize}
+
+\subsubsection{Project-documentatie (specs/)}
+
+Template bevat \texttt{specs/} met richtlijnen:
+
+\begin{itemize}
+  \item \texttt{architecture.md} — Overzicht systeem-design.
+  \item \texttt{code-style.md} — Codeerconventies.
+  \item \texttt{components.md} — Component-catalogus.
+  \item \texttt{naming-conventions.md} — Bestandsnaming, klassenaming.
+  \item \texttt{routes.md} — Route-structuur.
+\end{itemize}
+
+Deze documentatie helpt ontwikkelaars (en LLM-agenten) consistentie te behouden.
+
+\subsection{Integratie met MCP-tools}
+
+Wanneer \texttt{create-ballistix-project} wordt aangeroepen:
+
+\begin{enumerate}
+  \item \textbf{Copy:} Template wordt recursief gekopieerd naar nieuw projectpad.
+  \item \textbf{Git init:} Frisse git-repository in project.
+  \item \textbf{Cursor-rules:} \texttt{.cursor/rules/ballistix-agent-shell.mdc} geschreven (zie \texttt{ensureBallistixAgentShellCursorRule}).
+  \item \textbf{Lint \& commit:} \texttt{yarn lint:fix} + \texttt{git commit -m "init: bootstrap ballistix project"}.
+\end{enumerate}
+
+Na dit proces is het project gereed voor incrementele aanpassingen via overige tools (\texttt{generate-overview-page}, \texttt{generate-detail-view}, etc.).
+
+\subsection{Samenvatting: template als hallucinatie-preventie}
+
+Het template-project vormt de **onderste laag** van hallucinatie-preventie:
+
+\begin{itemize}
+  \item \textbf{Structuur gegeven:} Geen keuze over mappenindeling; LLM werkt within gegeven structuur.
+  \item \textbf{Config compleet:} TypeScript, ESLint, Tailwind, i18n allemaal pre-ingesteld — geen omwegen nodig.
+  \item \textbf{Voorbeelden aanwezig:} Concrete componenten als leidraad; minder hallucinatie over ``hoe bouw ik een Form?''.
+  \item \textbf{Navigation-stub:} \texttt{mainNavigationTabs} leeg maar gedefinieerd — tools weten exact waar in te vullen.
+\end{itemize}
+
+Dit garandeert dat zelfs een volledige hallucination over project-setup (bv. ``maak een \texttt{/components}-folder met 50 componenten'') niet kan plaatsvinden — de structuur is al vast.
+
+\section{\IfLanguageName{dutch}{Evaluatiesetup}{Evaluation Setup}}
+\label{sec:poc-evaluation}
+
+\subsection{Overzicht}
+
+De evaluatie meet de haalbaarheid en effectiviteit van de MCP-gebaseerde hybride architectuur via vier kernmetriekken: token-verbruik, hallucinatie-ratio, opstarttijd en code-kwaliteit. De setup vergelijkt drie LLM-modellen (Composer 2, Opus 4.7, GPT-5.5) over drie scenario's van toenemende complexiteit, met drie runs per combinatie voor stabiliteitsanalyse.
+
+\subsection{Kernmetriekken}
+
+\subsubsection{1. Token-verbruik}
+
+\noindent
+\textbf{Definitie:} Totaal aantal tokens (input + output) verbruikt door de Cursor Pro agent per project-generatie. \newline
+\textbf{Meetmethode:} Uitgelezen uit Cursor CLI terminal na voltooiing van agent-plan (regel ``\textit{X}k tokens used''). \newline
+\textbf{Doel:} Kwantificeren dat template-injectie + parametrische tools token-verbruik drastisch lager houden dan volledige generatie. \newline
+\textbf{Verwachte range:} Onder de 20K tokens totaal per project (onafhankelijk van scenario-complexiteit, vanwege template-reuse).
+
+\subsubsection{2. Hallucinatie-ratio}
+
+\noindent
+\textbf{Definitie:} Percentage code-blokken die off-spec zijn of kernregels overtreden. \newline
+\textbf{Meetmethode:} Handmatige code-review van gegenereerde bestanden per feature. Controlelist:
+\begin{itemize}
+  \item Custom \texttt{fetch()}-calls in plaats van \texttt{useRead} hook.
+  \item Filters geplaatst in \texttt{primaryActions} i.p.v. \texttt{secondaryActions}.
+  \item Verkeerde component-imports (bijv. rechtstreeks uit \texttt{@ballistix.digital/react-components} i.p.v. wrapper).
+  \item Off-spec code-stijl (naming, structuur).
+\end{itemize}
+
+\noindent
+\textbf{Quantificering:} Per gegenereerde file: ``heeft specfout'' vs. ``OK''. Aggregate per project: aantal features met fouten / totaal features. \newline
+\textbf{Verwachting:} Zeer lage hallucinatie-ratio (0--5\%) dankzij gelaagde preventie (resources, prompts, template-injectie).
+
+\subsubsection{3. Opstarttijd}
+
+\noindent
+\textbf{Definitie:} Wall-clock tijd (minuten) van agent-plan-startbevel tot afgewerkt project (initiële commit). \newline
+\textbf{Meetmethode:} Handmatige timing in terminal. \newline
+\textbf{Doel:} Verifiëren dat MCP-tool-aanroepen snel zijn; verwacht: ~5 minuten per gegenereerd project. \newline
+\textbf{Variabelen:} Model-response-latency, tool-execution-overhead, lint-fix-operaties.
+
+\subsubsection{4. Code-kwaliteit}
+
+\noindent
+\textbf{Definitie:} Aantal TypeScript en ESLint fouten in gegenereerde code na initieel genereren. \newline
+\textbf{Meetmethode:} Aan het einde van elke run:
+\begin{itemize}
+  \item \texttt{yarn lint} — ESLint-regelbreukingen.
+  \item \texttt{yarn build} — TypeScript \texttt{tsc} compile-errors.
+\end{itemize}
+
+\noindent
+\textbf{Doel:} Na \texttt{commit-project-changes} (inclusief \texttt{yarn lint:fix}) mag geen enkele error overblijven. \newline
+\textbf{Acceptatie-criterium:} Build en lint slagen zonder fouten.
+
+\subsubsection{5. Reproduceerbaarheid}
+
+\noindent
+\textbf{Definitie:} Mate waarin dezelfde agent-plan (prompt) met zelfde model identieke of zeer gelijkende code genereert. \newline
+\textbf{Meetmethode:} Voer 3 runs uit per model-scenario-combinatie; analyse verschillen via \texttt{diff}. \newline
+\textbf{Doel:} Vaststellen of agent-gedrag stabiel is (verwacht: hoogstwaarschijnlijk zeer stabil dankzij deterministische template-injectie).
+
+---
+
+\subsection{Experimentontwerp}
+
+\subsubsection{Onafhankelijke variabelen}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Experimentontwerp: factoren en niveaus}
+  \label{tab:experiment-design}
+  \small
+  \begin{tabularx}{\textwidth}{|l|l|l|}
+    \hline
+    \textbf{Factor} & \textbf{Niveaus} & \textbf{Beschrijving} \\
+    \hline
+    \textbf{LLM-model} &
+    Composer 2, Opus 4.7, GPT-5.5 &
+    Drie hedendaagse modellen; mix van providers (Google, Anthropic, OpenAI). \\
+    \hline
+    \textbf{Scenario-complexiteit} &
+    S1 (simpel), S2 (medium), S3 (complex) &
+    S1: 1 pagina + detail; S2: 2 tabelpagina's + filters; S3: 4 pagina's + acties. \\
+    \hline
+    \textbf{Replicas per combinatie} &
+    3 runs &
+    Om variabiliteit te meten en gemiddelden te berekenen. \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Afhankelijke variabelen}
+
+Per run meten we:
+\begin{itemize}
+  \item Totaal tokens used (getal).
+  \item Hallucinatie-ratio: aantal features met fouten / totaal gegenereerde features (percentage).
+  \item Opstarttijd in minuten (wall-clock).
+  \item Code-kwaliteit: ``lint + build succeed'' ja/nee.
+  \item Verschillen tussen runs (diff-analyse).
+\end{itemize}
+
+\subsubsection{Experimentmatrix}
+
+\noindent
+Totale omvang: \(3 \text{ modellen} \times 3 \text{ scenario's} \times 3 \text{ replicas} = 27 \text{ runs}\).
+
+\begin{table}[htbp]
+  \centering
+  \caption{Experimentmatrix: model × scenario}
+  \label{tab:experiment-matrix}
+  \small
+  \begin{tabularx}{\textwidth}{|l|c|c|c|}
+    \hline
+    \textbf{Model} & \textbf{S1 (simpel)} & \textbf{S2 (medium)} & \textbf{S3 (complex)} \\
+    \hline
+    Composer 2 & 3 runs & 3 runs & 3 runs \\
+    \hline
+    Opus 4.7 & 3 runs & 3 runs & 3 runs \\
+    \hline
+    GPT-5.5 & 3 runs & 3 runs & 3 runs \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+---
+
+\subsection{Hallucinatie-classificatie}
+
+\subsubsection{Criteriële fouten (tellen als hallucinatie)}
+
+\begin{enumerate}
+  \item \textbf{Custom \texttt{fetch()} logic:} Agent genereert eigen HTTP-aanroepen buiten \texttt{useRead}-hook. \textbf{Severiteit:} Kritiek — off-spec.
+  
+  \item \textbf{Filters buiten \texttt{secondaryActions}:} Filters in \texttt{primaryActions} of als losse toolbar-items. \textbf{Severiteit:} Kritiek — overtreedt resource-regel.
+  
+  \item \textbf{Verkeerde component-imports:} Rechtstreeks uit \texttt{@ballistix.digital/react-components} i.p.v. wrapper. \textbf{Severiteit:} Kritiek — architectuur-breuk.
+  
+  \item \textbf{Naamgevings- of code-stijl-overtredingen:} PascalCase/camelCase fouten, incorrect I18n-sleutel-format. \textbf{Severiteit:} Major — inconsistent met codingstyle.
+\end{enumerate}
+
+\subsubsection{Beoordeling per gegenereerde feature}
+
+Per gegenereerde pagina/component:
+\begin{itemize}
+  \item \textbf{``Passed''} — geen van bovenstaande fouten.
+  \item \textbf{``Failed''} — één of meer fouten aanwezig.
+\end{itemize}
+
+\noindent
+\textbf{Hallucinatie-ratio} = \(\frac{\text{features geclassificeerd als ``Failed''}}{\text{totaal gegenereerde features}}\).
+
+---
+
+\subsection{Token-tracking methodologie}
+
+\subsubsection{Handmatige logging}
+
+Voor elke run:
+\begin{enumerate}
+  \item Start agent: \texttt{agent} in terminal.
+  \item Voer \texttt{/plan} uit met specifieke scenario-prompt.
+  \item Wacht tot afronding; Cursor toont: ``\textit{X}k tokens used''.
+  \item Log: Model, scenario, tokens (als getal X).
+\end{enumerate}
+
+\subsubsection{Dataverzameling}
+
+Per run loggen:
+\begin{minted}[fontsize=\small]{text}
+Run ID: M<model>_S<scenario>_R<replica>
+Model: [Composer 2 | Opus 4.7 | GPT-5.5]
+Scenario: [S1 | S2 | S3]
+Tokens used: X (integer)
+Opstarttijd: Y minuten (float)
+Hallucinatie-ratio: Z% (integer)
+Build/lint status: [PASS | FAIL]
+Notes: [any issues]
+\end{minted}
+
+\subsubsection{Verwachte token-ranges}
+
+\noindent
+Dankzij template-injectie en parametrische tool-design verwacht ik zeer laag token-verbruik:
+
+\begin{itemize}
+  \item \textbf{S1 (1 pagina)}: 8--15K tokens.
+  \item \textbf{S2 (2 pagina's)}: 12--18K tokens.
+  \item \textbf{S3 (4 pagina's)}: 15--22K tokens.
+\end{itemize}
+
+\noindent
+\textit{Merk op:} Token-verbruik groeit sublineair met scenario-complexiteit omdat template-reuse betekent dat veel code **afhankelijk is van dezelfde templates**, niet opnieuw gegenereerd.
+
+---
+
+\subsection{Reproduceerbaarheid \& stabiliteitsanalyse}
+
+\subsubsection{Doelstelling}
+
+Verifiëren dat agent-gedrag stabiel is: hetzelfde model + scenario 3× runnen geeft dezelfde of zeer gelijkende output.
+
+\subsubsection{Meetmethode}
+
+Voor elke model-scenario-combinatie (3 runs):
+\begin{enumerate}
+  \item Run 1, 2, 3 starten met identieke \texttt{/plan}-prompt.
+  \item Gegenereerde bestanden vergelijken (primair: structuur, niet whitespace).
+  \item Vaststellen:
+    \begin{itemize}
+      \item Zijn outputbestanden identiek? → Stabiliteit: \textbf{zeer hoog}.
+      \item Zijn structuur en logica identiek, maar kleine verschillen in commentaar/variabelnamen? → Stabiliteit: \textbf{hoog}.
+      \item Significante verschillen in gegenereerde code? → Stabiliteit: \textbf{laag}.
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Verwachting}
+
+Zeer hoge stabiliteit verwacht. Reden: template-injectie maakt output deterministisch; de enige variabiliteit is model-inherent (zelden significant gegeven template-injectie).
+
+---
+
+\subsection{Datacollectie \& rapportage}
+
+\subsubsection{Documentatieformaat}
+
+Elke run wordt gedocumenteerd in een **spreadsheet** (CSV/Excel):
+
+\begin{table}[htbp]
+  \centering
+  \caption{Evaluatiegegevens-template per run}
+  \label{tab:eval-data-template}
+  \small
+  \begin{tabularx}{\textwidth}{|l|l|l|l|l|l|}
+    \hline
+    \textbf{Run ID} & \textbf{Model} & \textbf{Scenario} & \textbf{Tokens} & \textbf{Hall.\%} & \textbf{Time (min)} \\
+    \hline
+    M\_Comp2\_S1\_R1 & Composer 2 & S1 & 10K & 0\% & 4.5 \\
+    \hline
+    M\_Comp2\_S1\_R2 & Composer 2 & S1 & 11K & 0\% & 4.3 \\
+    \hline
+    \(⋮\) & \(⋮\) & \(⋮\) & \(⋮\) & \(⋮\) & \(⋮\) \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Analysefasen}
+
+\begin{enumerate}
+  \item \textbf{Fase 1: Data-compilatie} — 27 runs loggen in spreadsheet.
+  \item \textbf{Fase 2: Beschrijvende statistieken} — Per model-scenario: gemiddelde, std, min/max tokens, hallucinatie-ratio.
+  \item \textbf{Fase 3: Tabelrapport} — Thesis-klaar tabel (gemiddelde ± std per model-scenario).
+  \item \textbf{Fase 4: Visualisaties} — Optioneel: grafiek (scenario-complexiteit vs. tokens), box-plots (per model).
+\end{enumerate}
+
+\subsubsection{Rapportageformat in thesis}
+
+\noindent
+Primair format: **tabel** met structuur:
+
+\begin{table}[htbp]
+  \centering
+  \caption{Samenvattingsresultaten: tokens en hallucinatie per model-scenario}
+  \label{tab:results-summary}
+  \small
+  \begin{tabularx}{\textwidth}{|l|l|c|c|c|}
+    \hline
+    \textbf{Model} & \textbf{Scenario} & 
+    \textbf{Tokens (mean ± std)} & 
+    \textbf{Hall. (\%)} & 
+    \textbf{Time (min)} \\
+    \hline
+    Composer 2 & S1 & 10.3 ± 0.8K & 0 & 4.4 \\
+    \hline
+    Composer 2 & S2 & 14.2 ± 1.1K & 5 & 5.1 \\
+    \hline
+    \(⋮\) & \(⋮\) & \(⋮\) & \(⋮\) & \(⋮\) \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+---
+
+\subsection{Externe variabelen \& controllebeperkingen}
+
+\subsubsection{Oncontroleerbare factoren}
+
+\begin{itemize}
+  \item \textbf{Model-versie-updates:} LLM-provider kan model-versie upgraden tussen runs (bijv. Composer 2.1 → 2.2). \newline
+    \textit{Mitigatie:} Documenteer versies bij elke run.
+  
+  \item \textbf{Cursor Pro versie:} Cursor-CLI kan updaten; MCP-protocol versie kan wijzigen. \newline
+    \textit{Mitigatie:} Zet Cursor versie vast of documenteer updates.
+  
+  \item \textbf{Internet-latency:} Response-tijden kunnen variëren. Niet gemeten, maar kan opstarttijd beïnvloeden. \newline
+    \textit{Mitigatie:} Opstarttijd is wall-clock, dus latency zit erin; niet apart geïsoleerd.
+\end{itemize}
+
+\subsubsection{Controleerbare variabelen}
+
+\begin{itemize}
+  \item \textbf{Prompt-formulering:} Houd \texttt{/plan}-prompt identiek per scenario (fixed text).
+  \item \textbf{MCP-server-versie:} Geen updates aan server tussen runs.
+  \item \textbf{Template-project-versie:} Houd template constant.
+\end{itemize}
+
+---
+
+\subsection{Tijdschema}
+
+\subsubsection{Schatting per fase}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Evaluatie-tijdschema}
+  \label{tab:eval-timeline}
+  \small
+  \begin{tabularx}{\textwidth}{|l|X|c|}
+    \hline
+    \textbf{Fase} & \textbf{Activiteit} & \textbf{Geschatte tijd} \\
+    \hline
+    Run-execution & 27 × (5 min project-opstart + review) ≈ 3--4 uur & 3--4 uur \\
+    \hline
+    Data-consolidatie & Spreadsheet invullen, statistieken berekenen & 1 uur \\
+    \hline
+    Analyse \& rapportage & Tabel + grafieken opstellen, conclusies & 2--3 uur \\
+    \hline
+    \textbf{Totaal} & & \textbf{6--8 uur} \\
+    \hline
+  \end{tabularx}
+\end{table}
+
+\noindent
+Dit is realistisch werkkapaciteit, niet muurklok-tijd (parallel kunnen veel runs in tussentijd draaien).
+
+---
+
+\subsection{Samenvatting: Evaluatieprincipes}
+
+\begin{enumerate}
+  \item \textbf{Pragmatisch:} Handmatige metingen waar nodig; geen overkill-tooling.
+  \item \textbf{Gefocust:} Vier kernmetriekken (tokens, hallucinaties, tijd, kwaliteit).
+  \item \textbf{Stabiliteitsgericht:} 3 runs per combinatie voor gemiddelde-berekening.
+  \item \textbf{Rapporteerbaar:} Resultaten in tabelformat; reproduceerbare logging.
+  \item \textbf{Beperkt maar significant:} 27 runs is hanteerbaar; groot genoeg voor trends.
+\end{enumerate}

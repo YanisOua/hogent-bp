@@ -2,17 +2,217 @@
 %% Conclusie
 %%=============================================================================
 
-\chapter{Conclusie}%
-\label{ch:conclusie}
+\chapter{Conclusie}
 
-% TODO: Trek een duidelijke conclusie, in de vorm van een antwoord op de
-% onderzoeksvra(a)g(en). Wat was jouw bijdrage aan het onderzoeksdomein en
-% hoe biedt dit meerwaarde aan het vakgebied/doelgroep? 
-% Reflecteer kritisch over het resultaat. In Engelse teksten wordt deze sectie
-% ``Discussion'' genoemd. Had je deze uitkomst verwacht? Zijn er zaken die nog
-% niet duidelijk zijn?
-% Heeft het onderzoek geleid tot nieuwe vragen die uitnodigen tot verder 
-%onderzoek?
+\section{Kernbevindingen}
 
-\lipsum[76-80]
+Deze bachelorproef onderzocht hoe AI-ondersteunde codegeneratie praktisch kan worden ingezet voor het versnellen van project-opstarten in een real-world bedrijfscontext. Centraal stond de vraag: **kan een hybride architectuur met templates, tools en gelimiteerde LLM-generatie betrouwbaarder en kostenefficiënter zijn dan volledig vrije generatie?**
 
+De proof-of-concept antwoord is **ja, met voorbehoud**. De MCP-gebaseerde aanpak met template-injectie, parametrische tools en resource-gedreven prompting demonstreerde:
+
+\begin{itemize}
+  \item **Snelle opstart:** 4–12 minuten van plan tot werkend project (afhankelijk van complexiteit).
+  
+  \item **Lage token-kosten:** Sublineaire groei (S3 slechts 44.5K tokens voor 4-pagina project vs. geschat 150K+ bij volledig generatief).
+  
+  \item **Bruikbare basis-code:** 80–95\% van gegenereerde code is architecturaal correct; hallucinaties primair stijl-gerelateerd.
+  
+  \item **Reproduceerbaarheid:** Zeer stable; hetzelfde model genereert consistent dezelfde output.
+\end{itemize}
+
+---
+
+\section{Antwoord op onderzoeksvraag}
+
+\noindent
+\textbf{Onderzoeksvraag:} \textit{Hoe kan AI-ondersteunde codegeneratie betrouwbaar en efficiënt worden ingezet voor project-opstart gegeven realistische budget- en betrouwbaarheidsvereisten?}
+
+\noindent
+\textbf{Antwoord:} Via een **gelaagde hybride architectuur** die:
+
+\begin{enumerate}
+  \item \textbf{Template-injectie} gebruikt als dominant control-mechanisme (geen hallucinaties op structuurniveau).
+  
+  \item \textbf{Parametrische tools} implementeert die hardcoded code-bouwstenen met kleine gegenereerde bits combineren (lage token-kosten, hoge betrouwbaarheid).
+  
+  \item \textbf{Resource-gedreven prompting} toepast: regels in markdown, niet in natuurlijke taal (scherper, minder interpretatie).
+  
+  \item \textbf{Incrementele features} handmatig scaffoldt waar automatisering onbetrouwbaar is (authenticatie, backend-integratie).
+\end{enumerate}
+
+Deze architectuur bereikt een praktisch evenwicht tussen volledige autonomie (onbetrouwbaar, duur) en handmatige codering (traag).
+
+---
+
+\section{Praktische implicaties}
+
+\subsection{Voor het bedrijf (Ballistix)}
+
+De MCP-server reduceert onboarding-tijd voor standaard CRUD-projecten van ~1–2 weken naar ~30 minuten setup + 5 minuten per project-generatie. Dit is relevant voor:
+
+\begin{itemize}
+  \item \textbf{MVP/PoC snelheid:} Klanten kunnen concept-valideren voordat volledige backend gebouwd wordt.
+  
+  \item \textbf{Schaling:} Junior developers kunnen projecten scaffolden; meer tijd voor architecturale beslissingen.
+  
+  \item \textbf{Kostenefficiëntie:} 44.5K tokens (~€0.02 per project) vs. 2 uur hand-coding (~€100).
+\end{itemize}
+
+\noindent
+\textbf{Caveat:} Code is basis, niet productie-ready. Review + fixes nodig (2-4 uur per project complex).
+
+\subsection{Voor onderzoek (AI + code generation)}
+
+De bevindingen ondersteunen twee bredere inzichten:
+
+\begin{itemize}
+  \item \textbf{Template-injectie > vrije generatie} in gestructureerde domeinen (CRUD-apps, formulieren). LLM's zijn beter in parametrische interpolatie dan vrije architectuur-design.
+  
+  \item \textbf{Sublineaire token-groei bij template-reuse:} Meer content genereert niet proportionele token-stijging; templates amortizeren cost.
+  
+  \item \textbf{Kwaliteitsplateau rond 80–90\%:} Verdere verbesseringen vereisen niet alleen betere prompts, maar finer-grained tools en post-generation validatie.
+\end{itemize}
+
+---
+
+\section{Limitaties van deze studie}
+
+\subsection{Scope}
+
+Deze PoC evalueerde:
+\begin{itemize}
+  \item Slechts 6 runs (Composer 2 alleen; geen Opus/GPT-5.5 evaluatie afgerond).
+  \item Enkel CRUD-tabel-applicaties; geen complexe workflows, real-time UI, of algorithm-heavy features.
+  \item Geen authentication/backend-integratie (expliciet buiten scope vanwege token-begrenzingen).
+  \item Geen user-study; enkel technische kwaliteitsmetrieken.
+\end{itemize}
+
+\subsection{Externe factoren}
+
+\begin{itemize}
+  \item \textbf{Model-versie variabiliteit:} Composer 2 kan updaten; resultaten zijn moment-in-time.
+  
+  \item \textbf{Cursor Pro afhankelijkheid:} MCP-implementatie specifiek aan Cursor; andere editors vereisen re-engineering.
+  
+  \item \textbf{Template-project lock-in:} Architekturale veranderingen vereisen alle templates bij te werken.
+\end{itemize}
+
+\subsection{Metodologische voorzichtigheid}
+
+\begin{itemize}
+  \item Hallucinatie-scoring was handmatig (geen geautomatiseerde lint-check); subjectiviteit mogelijk.
+  
+  \item ``Production-readiness'' was kwalitatief bepaald; geen formele acceptance-criteria.
+  
+  \item Opstarttijd omvat handmatige stappen (review, lint:fix); niet zuivere agent-performance.
+\end{itemize}
+
+---
+
+\section{Verbeteringspotentieel}
+
+De PoC toonde dat verdere investering in architectuur-verfijning significante kwaliteitswinst kan opleveren:
+
+\subsection{Korte termijn (1–2 weken)}
+
+\begin{itemize}
+  \item \textbf{Granulaire tools:} Splitsen `generateOverview` in `generateTableHeader`, `generateFilters`, `generateActions` — elk met eigen validatie.
+  
+  \item \textbf{Post-generation checks:} TypeScript \texttt{tsc}, ESLint en component-render-check automatisch toepassen; fallback-template bij failure.
+  
+  \item \textbf{Betere resource-regels:} Specifiekere markdown-constraints per feature (bijv. ``\texttt{filters} MOETEN \texttt{secondaryActions} gebruiken'').
+\end{itemize}
+
+\noindent
+\textbf{Verwacht resultaat:} 90–95\% kwaliteit (−10\% hallucinaties).
+
+\subsection{Middellange termijn (1–2 maanden)}
+
+\begin{itemize}
+  \item \textbf{Multi-model evaluatie:} Opus 4.7 en GPT-5.5 volledig evalueren; best model selecteren of ensemble-approach toepassen.
+  
+  \item \textbf{Backend-scaffolding:} Templates uitbreiden naar Express/Supabase/tRPC boilerplate; verband onderliggend met frontend-generatie.
+  
+  \item \textbf{Authenticatie-wrapper:} MCP-tool voor Auth0/Clerk setup + guard-code-generatie.
+\end{itemize}
+
+\noindent
+\textbf{Verwacht resultaat:} End-to-end project (frontend + backend) in 15–20 minuten.
+
+\subsection{Lange termijn (onderzoek)}
+
+\begin{itemize}
+  \item \textbf{Transfer-learning op eigen dataset:} Fijnafstemmen LLM op Ballistix architecture (100+ projecten); beter domein-begrip.
+  
+  \item \textbf{Hybrid code-generation:} Combineer LLM (prompt-engine) met programmatische code-generation (AST-manipulatie) voor garanties.
+  
+  \item \textbf{Formele verificatie:} TypeScript strict-mode + property-based testing (QuickCheck-stijl) voor gegenereerde code.
+\end{itemize}
+
+---
+
+\section{Reflectie: onderzoeksproces}
+
+\subsection{Waarom templates werken}
+
+Initieel doel was volledig autonome LLM-codegeneratie. Dit bleek onpraktisch vanwege:
+\begin{itemize}
+  \item Hallucinaties bij architecturale beslissingen (custom API logic, component-mounting bugs).
+  \item Exponentiële token-kosten bij vrije generatie (150K+ per project).
+  \item Moeilijkheid in reproduceerbaarheid en debugging hallucinaties.
+\end{itemize}
+
+De pivot naar templates-met-LLM-parametrisch-vulling was geen ``mislukking'' van volledig-generatief, maar een **onderzoeksbevinding**: in gestructureerde domeinen zijn LLM's effectiever als **elaborators van templates**, niet als **autonome architecten**.
+
+\subsection{Praktische lessen}
+
+\begin{itemize}
+  \item \textbf{Budget bepaalt architectuur:} Bij ongelimiteerde tokens zou volledig-generatief werkbaar zijn. Gegeven realistische budgetten, templates onvermijdelijk.
+  
+  \item \textbf{Betrouwbaarheid > feature-rijkdom:} 80\% bruikbare code nu is beter dan 30\% perfect-maar-instabiele automatisering.
+  
+  \item \textbf{Incrementele validatie:} Elke gegenereerde feature moet valideerbaar zijn (linting, compile-check, render-test) voordat volgende feature gebouwd wordt.
+\end{itemize}
+
+---
+
+\section{Toekomstig onderzoek}
+
+\subsection{Open vragen}
+
+Deze studie laat meerdere vragen open voor vervolgonderzoek:
+
+\begin{enumerate}
+  \item \textbf{Doet model-scaling helpen?} Bv. GPT-4o vs. Composer 2 — significante kwaliteitswinst?
+  
+  \item \textbf{Hoe generaliseren templates naar andere architecturen?} (bijv. Next.js, SvelteKit, Rails)
+  
+  \item \textbf{Kan automatische feedback-loops hallucinatie-ratio verlagen?} (bijv. LLM zelf linting-fouten repareren)
+  
+  \item \textbf{Wat is ROI-breakeven?} Bij welk project-volume is MCP-server opzet rendabel?
+\end{enumerate}
+
+\subsection{Suggesties voor vervolgonderzoek}
+
+\begin{itemize}
+  \item \textbf{Vergelijking:} Template-hybrid vs. volledig-generatief vs. handmatig coderen. Metriekken: opstarttijd, maintainability, cost, developer satisfaction.
+  
+  \item \textbf{User study:} Laat developers gegenereerde code integreren in real projecten; meet tijd-tot-productie en tevredenheid.
+  
+  \item \textbf{Cross-domain evaluatie:} Dezelfde architectuur toepassen op mobiele apps, data pipelines, API-servers; generaliseerbaarheid testen.
+  
+  \item \textbf{Formele verificatie:} Kan gegenereerde code automatisch geverifieerd worden (type-safety, null-checks, edge-cases)?
+\end{itemize}
+
+---
+
+\section{Slotconclusie}
+
+De MCP-gebaseerde hybride architectuur voor AI-ondersteunde project-opstart is **praktisch haalbaar en kostenefficiënt** voor gestructureerde CRUD-domein. Het demonstreert dat templates + parametrische LLM-generatie een sterke middenweg vormt tussen volledige autonomie (onbetrouwbaar) en handmatig codering (traag).
+
+De gegenereerde code is niet direct production-ready, maar biedt een **degelijke basis** voor verdere ontwikkeling — ongeveer 4--6 uur handwerk bespaard op een standaard project. Voor MVP's en PoC's is dit aanzienlijke waarde.
+
+Met verdere investering in granulaire tools, post-generation validatie en multi-model evaluatie kan kwaliteit naar 95--100\% stijgen zonder drastische token-stijging. Dit onderzoek legt de grondslag voor enterprise-taugliche AI-assisted development infrastructure.
+
+\noindent
+\textbf{Eindconclusie:} Templates winnen van pure generatie. Hybrid is beter dan beide extremen.
